@@ -1,1 +1,1 @@
-"# lab10-green-triangle" 
+# lab10-green-triangle
