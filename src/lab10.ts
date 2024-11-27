@@ -111,5 +111,3 @@ function main() {
   gl.useProgram(null);
   gl.deleteProgram(program);
 }
-
-main();
