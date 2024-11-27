@@ -2,7 +2,7 @@
   "name": "webgl-compgraph",
   "version": "1.0.0",
   "description": "Webgl tasks for CS332 MMCS SFEDU",
-  "main": "view/index.html",
+  "main": "index.html",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "rimraf ./build && tsc",
@@ -21,6 +21,7 @@
   "devDependencies": {
     "@types/node": "^22.9.0",
     "http-server": "^14.1.1",
+    "nodemon": "^3.1.7",
     "rimraf": "^6.0.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.3"
