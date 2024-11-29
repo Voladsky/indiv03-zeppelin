@@ -13,7 +13,7 @@ out vec4 color;
 
 void main() {
   // the TRIANGLE is GREEN
-  color = vec4(1, 0, 0, 1);
+  color = vec4(0, 1, 0, 1);
 }
 `;
 function initShader(gl, type, source) {
@@ -69,12 +69,9 @@ function main() {
     const VBO = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, VBO);
     const triangle = [
-        0.0, 1,
-        -1, -1,
-        1, 0.2,
-        -1, 0.2,
-        1, -1,
-        0.0, 1
+        -1.0, -1.0,
+        0.0, 1.0,
+        1.0, -1.0,
     ];
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(triangle), gl.STATIC_DRAW);
     gl.useProgram(program);
@@ -84,7 +81,7 @@ function main() {
     gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-    gl.drawArrays(gl.LINE_STRIP, 0, 6);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
     var error = gl.getError();
     if (error != gl.NO_ERROR) {
         alert(error);
@@ -95,4 +92,3 @@ function main() {
     gl.useProgram(null);
     gl.deleteProgram(program);
 }
-main();
