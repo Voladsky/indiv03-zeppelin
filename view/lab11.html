@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <link rel="icon" type="image/x-icon" href="../images/favicon.ico">
+    <link rel="stylesheet" href="./styles/styles.css" />
+    <title>Lab 11: Gradient Shapes</title>
+</head>
+
+<body>
+    <a id="back" href="../index.html">
+        <img src="../images/back.gif">
+    </a>
+    <div class="center-container">
+        <canvas id="gl-canvas" width="500" height="500"></canvas>
+    </div>
+    <div class="center-container">
+        <button onclick="setMode('flat')">Flat Color (Shader)</button>
+        <button onclick="setMode('uniform')">Flat Color (Uniform)</button>
+        <button onclick="setMode('gradient')">Gradient</button>
+    </div>
+    <script src="../build/lab11.js" type="text/javascript"></script>
+</body>
+
+</html>
