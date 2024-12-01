@@ -17,23 +17,34 @@ h1 {
 }
 
 ul {
-    list-style-type: none;    
+    list-style-type: none;
 }
 
 li {
-    position:sticky;
+    position: sticky;
     font-size: 40px;
     /* transform: rotate(6deg); */
 }
 
-a:visited { 
-    text-decoration: none; 
+a:visited {
+    text-decoration: none;
     color: orange;
 }
 
-a:hover { text-decoration: none; color:yellow; }
-a:focus { text-decoration: none; color:orange; }
-a:active { text-decoration: none; color:teal; }
+a:hover {
+    text-decoration: none;
+    color: yellow;
+}
+
+a:focus {
+    text-decoration: none;
+    color: orange;
+}
+
+a:active {
+    text-decoration: none;
+    color: teal;
+}
 
 .star {
     scale: 1.5;
@@ -45,4 +56,9 @@ a:active { text-decoration: none; color:teal; }
     position: fixed;
     top: 30px;
     left: 30px;
+}
+
+#gl-canvas {
+    border: 1px solid white;
+    /* Для отладки */
 }

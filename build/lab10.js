@@ -1,21 +1,21 @@
 "use strict";
 const vertexShaderString = `#version 300 es
-in vec2 coord;
+  in vec2 coord;
 
-void main() {
-  gl_Position = vec4(coord, 0.0, 1.0);
-}
-`;
+  void main() {
+    gl_Position = vec4(coord, 0.0, 1.0);
+  }
+  `;
 const fragmentShaderString = `#version 300 es
-precision highp float;
+  precision highp float;
 
-out vec4 color;
+  out vec4 color;
 
-void main() {
-  // the TRIANGLE is GREEN
-  color = vec4(0, 1, 0, 1);
-}
-`;
+  void main() {
+    // the TRIANGLE is GREEN
+    color = vec4(0, 1, 0, 1);
+  }
+  `;
 function initShader(gl, type, source) {
     const shader = gl.createShader(type);
     if (!shader)
