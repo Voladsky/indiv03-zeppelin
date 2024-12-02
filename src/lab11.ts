@@ -1,159 +1,126 @@
-
-// Глобальные переменные
-let mode: 'flat' | 'uniform' | 'gradient' = 'flat';
-let gl: WebGL2RenderingContext;
-let program: WebGLProgram;
-const flatColor = [1.0, 0.0, 0.0, 1.0]; // Красный цвет для flat mode
-const uniformColor = [0.0, 0.0, 1.0, 1.0]; // Синий цвет для uniform mode
-let vertexCount: number; // Количество вершин
-
-// Вершинный шейдер
-const vertexShaderSource = `#version 300 es
-in vec2 coord;
-in vec3 vertexColor;
-out vec3 fragColor;
-
-void main() {
-gl_Position = vec4(coord, 0.0, 1.0);
-fragColor = vertexColor; // Передача цвета фрагментному шейдеру
-}
-`;
-
-// Фрагментный шейдер
-const fragmentShaderSource = `#version 300 es
-precision highp float;
-in vec3 fragColor;
-out vec4 color;
-
-uniform vec4 uColor; // Цвет для uniform-заливки
-uniform int uMode; // Режим отрисовки
-
-void main() {
-if (uMode == 0) {
-    color = vec4(fragColor, 1.0); // Градиентный цвет
-} else if (uMode == 1) {
-    color = uColor; // Uniform-заливка
-} else {
-    color = vec4(1.0, 0.0, 0.0, 1.0); // Плоский цвет
-}
-}
-`;
-
-// Функция для создания шейдера
-export function initShader(gl: WebGL2RenderingContext, type: number, source: string): WebGLShader {
-    const shader = gl.createShader(type);
-    if (!shader) {
-        throw new Error("Не удалось создать шейдер");
-    }
-
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    if (gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        return shader;
-    }
-    console.error(gl.getShaderInfoLog(shader));
-    gl.deleteShader(shader);
-    throw new Error("Ошибка компиляции шейдера");
-}
-
-// Функция для создания программы
-export function createProgram(gl: WebGL2RenderingContext, vertexShader: WebGLShader, fragmentShader: WebGLShader): WebGLProgram {
-    const program = gl.createProgram();
-    if (!program) {
-        throw new Error("Не удалось создать программу");
-    }
-
-    gl.attachShader(program, vertexShader);
-    gl.attachShader(program, fragmentShader);
-    gl.linkProgram(program);
-
-    if (gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        return program;
-    }
-    console.error(gl.getProgramInfoLog(program));
-    gl.deleteProgram(program);
-    throw new Error("Ошибка линковки программы");
-}
-
-// Функция для установки плоского цвета
-function setFlatColor() {
-    mode = 'flat';
-    draw();
-}
-
-// Функция для установки uniform-цвета
-function setUniformColor() {
-    mode = 'uniform';
-    draw();
-}
-
-// Функция для установки градиента
-function setGradient() {
-    mode = 'gradient';
-    draw();
-}
-
-// Функция отрисовки
-function draw() {
-    gl.clear(gl.COLOR_BUFFER_BIT);
-
-    const uMode = gl.getUniformLocation(program, "uMode");
-    gl.uniform1i(uMode, mode === 'gradient' ? 0 : mode === 'uniform' ? 1 : 2);
-
-    if (mode === 'uniform') {
-        const uColor = gl.getUniformLocation(program, "uColor");
-        gl.uniform4fv(uColor, uniformColor);
-    }
-
-    gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
-}
-
-
-// Главная функция
 export function main() {
+    const vertexShaderString: string = `#version 300 es
+    in vec2 coord;
+    in vec3 vertexColor;
+    out vec3 fragColor;
+  
+    void main() {
+      fragColor = vertexColor;
+      gl_Position = vec4(coord, 0.0, 1.0);
+    }
+    `;
+  
+    const fragmentShaderString: string = `#version 300 es
+    precision highp float;
+    in vec3 fragColor;
+    out vec4 color;
+  
+    void main() {
+      color = vec4(fragColor, 1.0);
+    }
+    `;
+  
+    const shapes = {
+      quad: [-0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, 0.5],
+      fan: [0.0, 0.0, -0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, 0.5],
+      pentagon: [
+        0.0, 0.5,
+        0.47, 0.15,
+        0.29, -0.4,
+        -0.29, -0.4,
+        -0.47, 0.15,
+      ],
+    };
+  
+    const colors = {
+      flat: [0.0, 1.0, 0.0],
+      gradient: [
+        [1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 0.0, 1.0],
+        [1.0, 1.0, 0.0],
+        [0.0, 1.0, 1.0],
+      ],
+    };
+  
+    function initShader(gl: WebGL2RenderingContext, type: number, source: string): WebGLShader {
+      const shader = gl.createShader(type);
+      if (!shader) throw new Error("Failed to create shader");
+  
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+  
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        const error = gl.getShaderInfoLog(shader);
+        gl.deleteShader(shader);
+        throw new Error(`Failed to compile shader: ${error}`);
+      }
+  
+      return shader;
+    }
+  
+    function createProgram(gl: WebGL2RenderingContext, vertexShader: WebGLShader, fragmentShader: WebGLShader): WebGLProgram {
+      const program = gl.createProgram();
+      if (!program) throw new Error("Failed to create program");
+  
+      gl.attachShader(program, vertexShader);
+      gl.attachShader(program, fragmentShader);
+      gl.linkProgram(program);
+  
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        const error = gl.getProgramInfoLog(program);
+        gl.deleteProgram(program);
+        throw new Error(`Failed to link program: ${error}`);
+      }
+  
+      return program;
+    }
+  
+    function render(gl: WebGL2RenderingContext, shape: keyof typeof shapes, mode: "flat" | "gradient") {
+      const program = createProgram(
+        gl,
+        initShader(gl, gl.VERTEX_SHADER, vertexShaderString),
+        initShader(gl, gl.FRAGMENT_SHADER, fragmentShaderString)
+      );
+      gl.useProgram(program);
+  
+      const vertices = shapes[shape];
+      const vertexColors = mode === "flat"
+        ? Array(vertices.length / 2).fill(colors.flat).flat()
+        : colors.gradient.flat();
+  
+      const vertexBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+  
+      const colorBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexColors), gl.STATIC_DRAW);
+  
+      const coordLocation = gl.getAttribLocation(program, "coord");
+      const colorLocation = gl.getAttribLocation(program, "vertexColor");
+  
+      gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+      gl.vertexAttribPointer(coordLocation, 2, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(coordLocation);
+  
+      gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+      gl.vertexAttribPointer(colorLocation, 3, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(colorLocation);
+  
+      gl.clearColor(0.0, 0.0, 0.0, 1.0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+  
+      gl.drawArrays(gl.TRIANGLE_FAN, 0, vertices.length / 2);
+    }
+  
     const canvas = document.querySelector<HTMLCanvasElement>("#gl-canvas")!;
-    if (!canvas) {
-        console.error("Canvas not found");
-        return;
-    }
-    gl = canvas.getContext("webgl2")!;
-    if (!gl) {
-        alert("WebGL2 не поддерживается");
-        return;
-    }
-
-    
-
-    
-    const vertexShader = initShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
-    const fragmentShader = initShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
-
-    program = createProgram(gl, vertexShader, fragmentShader);
-
-    gl.useProgram(program);
-
-    // Создаём массив вершин
-    const vertices = new Float32Array([
-        // Координаты    // Цвета вершин
-        -0.5, -0.5,     1.0, 0.0, 0.0,  // Красный
-        0.5, -0.5,     0.0, 1.0, 0.0,  // Зелёный
-        0.0,  0.5,     0.0, 0.0, 1.0   // Синий
-    ]);
-    vertexCount = vertices.length / 5;
-
-    const VBO = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, VBO);
-    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
-
-    const coord = gl.getAttribLocation(program, "coord");
-    const vertexColor = gl.getAttribLocation(program, "vertexColor");
-
-    gl.vertexAttribPointer(coord, 2, gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 0);
-    gl.enableVertexAttribArray(coord);
-
-    gl.vertexAttribPointer(vertexColor, 3, gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 2 * Float32Array.BYTES_PER_ELEMENT);
-    gl.enableVertexAttribArray(vertexColor);
-
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    draw();
-}
+    const gl = canvas.getContext("webgl2")!;
+    const shapeSelect = document.getElementById("shape") as HTMLSelectElement;
+    const flatShaderBtn = document.getElementById("flat-shader")!;
+    const gradientBtn = document.getElementById("gradient")!;
+  
+    flatShaderBtn.addEventListener("click", () => render(gl, shapeSelect.value as keyof typeof shapes, "flat"));
+    gradientBtn.addEventListener("click", () => render(gl, shapeSelect.value as keyof typeof shapes, "gradient"));
+  }
+  

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <link rel="icon" type="image/x-icon" href="../images/favicon.ico">
     <link rel="stylesheet" href="./styles/styles.css" />
-    <title>Lab 11: Gradient Shapes</title>
+    <title>Lab 11</title>
 </head>
 
 <body>
@@ -14,14 +14,17 @@
         <img src="../images/back.gif">
     </a>
     <div class="center-container">
-        <canvas id="gl-canvas" width="500" height="500"></canvas>
-    </div>
-    <div class="center-container">
-        <canvas id="gl-canvas" width="500" height="500"></canvas>
-        <div id="controls">
-            <button onclick="setFlatColor()">Плоский цвет</button>
-            <button onclick="setUniformColor()">Цвет через uniform</button>
-            <button onclick="setGradient()">Градиентный цвет</button>
+        <canvas id="gl-canvas" width="400" height="300"></canvas>
+        <div class="controls">
+            <label for="shape">Выберите фигуру:</label>
+            <select id="shape">
+          <option value="quad">Четырехугольник</option>
+          <option value="fan">Веер</option>
+          <option value="pentagon">Пятиугольник</option>
+        </select>
+            <button id="flat-shader">Плоское закрашивание (константный цвет)</button>
+            <button id="flat-uniform">Плоское закрашивание (цвет через uniform)</button>
+            <button id="gradient">Градиентное закрашивание</button>
         </div>
     </div>
     <script src="../build/lab11.js" type="text/javascript"></script>
