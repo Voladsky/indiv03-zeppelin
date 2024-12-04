@@ -68,11 +68,11 @@ void main() {
 }
 `;
 
-const quadrilateral: Vertices = [
-  -0.7, -0.5,
-  -0.7, 0.5,
-  0.8, -0.5,
-  0.7, 0.3,
+const cube: Vertices = [
+  -0.7, -0.1,
+  -0.4, 0.5,
+  0.4, -0.5,
+  0.7, 0.1,
 ];
 
 const fan: Vertices = [
@@ -94,7 +94,7 @@ const pentagon: Vertices = [
 
 let vertexShaderSource: ShaderSource = vertexShaderSource1;
 let fragmentShaderSource: ShaderSource = fragmentShaderSource1;
-let vertices: Vertices = quadrilateral;
+let vertices: Vertices = cube;
 let primitive: GLenum = WebGL2RenderingContext.TRIANGLE_STRIP;
 
 function init(): void {
@@ -221,7 +221,7 @@ function main(): void {
   selectFigure.addEventListener('change', function() {
     if (!gl) return;
     if (selectFigure?.options[0].selected === true) {
-      vertices = quadrilateral;
+      vertices = cube;
       primitive = gl.TRIANGLE_STRIP;
     }
     else if (selectFigure?.options[1].selected === true) {

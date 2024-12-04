@@ -58,11 +58,11 @@ void main() {
   color = v_color;
 }
 `;
-    const quadrilateral = [
-        -0.7, -0.5,
-        -0.7, 0.5,
-        0.8, -0.5,
-        0.7, 0.3,
+    const cube = [
+        -0.7, -0.1,
+        -0.4, 0.5,
+        0.4, -0.5,
+        0.7, 0.1,
     ];
     const fan = [
         0.0, -0.8,
@@ -81,7 +81,7 @@ void main() {
     ];
     let vertexShaderSource = vertexShaderSource1;
     let fragmentShaderSource = fragmentShaderSource1;
-    let vertices = quadrilateral;
+    let vertices = cube;
     let primitive = WebGL2RenderingContext.TRIANGLE_STRIP;
     function init() {
         initShaders();
@@ -193,7 +193,7 @@ void main() {
             if (!gl)
                 return;
             if ((selectFigure === null || selectFigure === void 0 ? void 0 : selectFigure.options[0].selected) === true) {
-                vertices = quadrilateral;
+                vertices = cube;
                 primitive = gl.TRIANGLE_STRIP;
             }
             else if ((selectFigure === null || selectFigure === void 0 ? void 0 : selectFigure.options[1].selected) === true) {
