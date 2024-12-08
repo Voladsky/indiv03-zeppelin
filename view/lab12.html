@@ -16,18 +16,19 @@
     <a id="back" href="../index.html">
       <img src="../images/back.gif">
     </a>
-    <form>
-      <label for="task">Выберите задание:</label>
-        <select id="task" name="task">
-          <option value="tetrahedron">Тетраэдр</option>
-          <option value="cube-color">Куб с цветами</option>
-          <option value="cube-texture">Куб с текстурами</option>
-          <option value="circle">Круг</option>
-        </select>
-    </form>
 
     <div class="center-container">
       <canvas id="gl-canvas" width="800" height="600"></canvas>
+      <form>
+        <label for="figure">Выберите задание:</label>
+          <select id="figure" name="figure">
+            <option value="tetrahedron">Тетраэдр</option>
+            <option value="cube-color">Куб с цветами</option>
+            <option value="cube-texture">Куб с текстурами</option>
+            <option value="circle">Круг</option>
+          </select>
+      </form>
+    </div>
     <script src="../src/lab12.js" type="module"></script>
   </body>
 </html>
