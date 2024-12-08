@@ -1,6 +1,9 @@
 import {} from 'https://cdn.jsdelivr.net/npm/gl-matrix@2.4.1/dist/gl-matrix.js';
 import {WebGLApp} from './lab10.js';
 
+var image = new Image();
+image.src = "../images/master_of_puppets.jpg"
+
 class Tetrahedron {
     constructor(canvasId) {
         this.app = WebGLApp;
@@ -142,7 +145,7 @@ class Cube {
 
         in vec2 tex_coord;
         uniform sampler2D our_texture;
-        
+
         void main() {
             color = texture(our_texture, tex_coord) * vec4(v_color, 1.0);
         }
@@ -179,81 +182,94 @@ class Cube {
     initVBO() {
         const vertexData = new Float32Array([
             // Front face
-            -0.5, -0.5, +0.5, 1.0, 0.0, 0.0,  // Red
-            -0.5, +0.5, +0.5, 0.0, 0.0, 1.0,  // Blue
-            +0.5, +0.5, +0.5, 0.0, 0.0, 1.0,  // Blue
-            +0.5, +0.5, +0.5, 0.0, 0.0, 1.0,  // Blue
-            +0.5, -0.5, +0.5, 1.0, 0.0, 0.0,  // Red
-            -0.5, -0.5, +0.5, 1.0, 0.0, 0.0,  // Red
+            -0.5, -0.5, +0.5, 1.0, 0.0, 0.0, 1 - 0.0, 0.0,  // Bottom-left
+            -0.5, +0.5, +0.5, 0.0, 0.0, 1.0, 1 - 0.0, 1.0,  // Top-left
+            +0.5, +0.5, +0.5, 0.0, 0.0, 1.0, 1 - 1.0, 1.0,  // Top-right
+            +0.5, +0.5, +0.5, 0.0, 0.0, 1.0, 1 - 1.0, 1.0,  // Top-right
+            +0.5, -0.5, +0.5, 1.0, 0.0, 0.0, 1 - 1.0, 0.0,  // Bottom-right
+            -0.5, -0.5, +0.5, 1.0, 0.0, 0.0, 1 - 0.0, 0.0,  // Bottom-left
 
             // Back face
-            -0.5, -0.5, -0.5, 1.0, 0.0, 0.0,  // Red
-            +0.5, +0.5, -0.5, 0.0, 0.0, 1.0,  // Blue
-            -0.5, +0.5, -0.5, 0.0, 0.0, 1.0,  // Blue
-            +0.5, +0.5, -0.5, 0.0, 0.0, 1.0,  // Blue
-            -0.5, -0.5, -0.5, 1.0, 0.0, 0.0,  // Red
-            +0.5, -0.5, -0.5, 1.0, 0.0, 0.0,  // Red
+            -0.5, -0.5, -0.5, 1.0, 0.0, 0.0, 1 - 0.0, 0.0,  // Bottom-left
+            +0.5, +0.5, -0.5, 0.0, 0.0, 1.0, 1 - 1.0, 1.0,  // Top-right
+            -0.5, +0.5, -0.5, 0.0, 0.0, 1.0, 1 - 0.0, 1.0,  // Top-left
+            +0.5, +0.5, -0.5, 0.0, 0.0, 1.0, 1 - 1.0, 1.0,  // Top-right
+            -0.5, -0.5, -0.5, 1.0, 0.0, 0.0, 1 - 0.0, 0.0,  // Bottom-left
+            +0.5, -0.5, -0.5, 1.0, 0.0, 0.0, 1 - 1.0, 0.0,  // Bottom-right
 
             // Top face
-            -0.5, +0.5, -0.5, 0.0, 0.0, 1.0,  // Blue
-            -0.5, +0.5, +0.5, 0.0, 0.0, 1.0,  // Blue
-            +0.5, +0.5, +0.5, 0.0, 0.0, 1.0,  // Blue
-            +0.5, +0.5, +0.5, 0.0, 0.0, 1.0,  // Blue
-            +0.5, +0.5, -0.5, 0.0, 0.0, 1.0,  // Blue
-            -0.5, +0.5, -0.5, 0.0, 0.0, 1.0,  // Blue
+            -0.5, +0.5, -0.5, 0.0, 0.0, 1.0, 1 - 0.0, 1.0,  // Bottom-left
+            -0.5, +0.5, +0.5, 0.0, 0.0, 1.0, 1 - 0.0, 0.0,  // Top-left
+            +0.5, +0.5, +0.5, 0.0, 0.0, 1.0, 1 - 1.0, 0.0,  // Top-right
+            +0.5, +0.5, +0.5, 0.0, 0.0, 1.0, 1 - 1.0, 0.0,  // Top-right
+            +0.5, +0.5, -0.5, 0.0, 0.0, 1.0, 1 - 1.0, 1.0,  // Bottom-right
+            -0.5, +0.5, -0.5, 0.0, 0.0, 1.0, 1 - 0.0, 1.0,  // Bottom-left
 
             // Bottom face
-            -0.5, -0.5, -0.5, 1.0, 0.0, 0.0,  // Red
-            +0.5, -0.5, +0.5, 1.0, 0.0, 0.0,  // Red
-            -0.5, -0.5, +0.5, 1.0, 0.0, 0.0,  // Red
-            +0.5, -0.5, +0.5, 1.0, 0.0, 0.0,  // Red
-            -0.5, -0.5, -0.5, 1.0, 0.0, 0.0,  // Red
-            +0.5, -0.5, -0.5, 1.0, 0.0, 0.0,  // Red
+            -0.5, -0.5, -0.5, 1.0, 0.0, 0.0, 1 - 0.0, 0.0,  // Bottom-left
+            +0.5, -0.5, +0.5, 1.0, 0.0, 0.0, 1 - 1.0, 1.0,  // Top-right
+            -0.5, -0.5, +0.5, 1.0, 0.0, 0.0, 1 - 0.0, 1.0,  // Top-left
+            +0.5, -0.5, +0.5, 1.0, 0.0, 0.0, 1 - 1.0, 1.0,  // Top-right
+            -0.5, -0.5, -0.5, 1.0, 0.0, 0.0, 1 - 0.0, 0.0,  // Bottom-left
+            +0.5, -0.5, -0.5, 1.0, 0.0, 0.0, 1 - 1.0, 0.0,  // Bottom-right
 
             // Right face
-            +0.5, -0.5, -0.5, 1.0, 0.0, 0.0,  // Red
-            +0.5, -0.5, +0.5, 1.0, 0.0, 0.0,  // Red
-            +0.5, +0.5, +0.5, 0.0, 0.0, 1.0,  // Blue
-            +0.5, +0.5, +0.5, 0.0, 0.0, 1.0,  // Blue
-            +0.5, +0.5, -0.5, 0.0, 0.0, 1.0,  // Blue
-            +0.5, -0.5, -0.5, 1.0, 0.0, 0.0,  // Red
+            +0.5, -0.5, -0.5, 1.0, 0.0, 0.0, 1 - 0.0, 0.0,  // Bottom-left
+            +0.5, -0.5, +0.5, 1.0, 0.0, 0.0, 1 - 0.0, 1.0,  // Top-left
+            +0.5, +0.5, +0.5, 0.0, 0.0, 1.0, 1 - 1.0, 1.0,  // Top-right
+            +0.5, +0.5, +0.5, 0.0, 0.0, 1.0, 1 - 1.0, 1.0,  // Top-right
+            +0.5, +0.5, -0.5, 0.0, 0.0, 1.0, 1 - 1.0, 0.0,  // Bottom-right
+            +0.5, -0.5, -0.5, 1.0, 0.0, 0.0, 1 - 0.0, 0.0,  // Bottom-left
 
             // Left face
-            -0.5, -0.5, -0.5, 1.0, 0.0, 0.0,  // Red
-            -0.5, +0.5, +0.5, 0.0, 0.0, 1.0,  // Blue
-            -0.5, -0.5, +0.5, 1.0, 0.0, 0.0,  // Red
-            -0.5, +0.5, +0.5, 0.0, 0.0, 1.0,  // Blue
-            -0.5, -0.5, -0.5, 1.0, 0.0, 0.0,  // Red
-            -0.5, +0.5, -0.5, 0.0, 0.0, 1.0,  // Blue
+            -0.5, -0.5, -0.5, 1.0, 0.0, 0.0, 1 - 0.0, 0.0,  // Bottom-left
+            -0.5, +0.5, +0.5, 0.0, 0.0, 1.0, 1 - 1.0, 1.0,  // Top-right
+            -0.5, -0.5, +0.5, 1.0, 0.0, 0.0, 1 - 0.0, 1.0,  // Top-left
+            -0.5, +0.5, +0.5, 0.0, 0.0, 1.0, 1 - 1.0, 1.0,  // Top-right
+            -0.5, -0.5, -0.5, 1.0, 0.0, 0.0, 1 - 0.0, 0.0,  // Bottom-left
+            -0.5, +0.5, -0.5, 0.0, 0.0, 1.0, 1 - 1.0, 0.0   // Bottom-right
         ]);
         const VBO = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, VBO);
         this.gl.bufferData(this.gl.ARRAY_BUFFER, vertexData, this.gl.DYNAMIC_DRAW);
         const positionLocation = this.gl.getAttribLocation(this.program, "position");
         this.gl.enableVertexAttribArray(positionLocation);
-        this.gl.vertexAttribPointer(positionLocation, 3, this.gl.FLOAT, false, 6 * Float32Array.BYTES_PER_ELEMENT, 0);
+        this.gl.vertexAttribPointer(positionLocation, 3, this.gl.FLOAT, false, 8 * Float32Array.BYTES_PER_ELEMENT, 0);
         const colorLocation = this.gl.getAttribLocation(this.program, "color");
         this.gl.enableVertexAttribArray(colorLocation);
-        this.gl.vertexAttribPointer(colorLocation, 3, this.gl.FLOAT, false, 6 * Float32Array.BYTES_PER_ELEMENT, 3 * Float32Array.BYTES_PER_ELEMENT);
+        this.gl.vertexAttribPointer(colorLocation, 3, this.gl.FLOAT, false, 8 * Float32Array.BYTES_PER_ELEMENT, 3 * Float32Array.BYTES_PER_ELEMENT);
+
+        const textureCoordLocation = this.gl.getAttribLocation(this.program, "t");
+        this.gl.enableVertexAttribArray(textureCoordLocation);
+        this.gl.vertexAttribPointer(textureCoordLocation, 2, this.gl.FLOAT, false, 8 * Float32Array.BYTES_PER_ELEMENT, 6 * Float32Array.BYTES_PER_ELEMENT);
+
+        const texture_1 = this.gl.createTexture();
+
+        this.gl.activeTexture(this.gl.TEXTURE0);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, texture_1);
+
+        //this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
 
 
-        const image = new Image();
-        image.onload = () =>
-        {
-            var texture_1 = this.gl.createTexture();
-            this.gl.bindTexture(this.gl.TEXTURE_2D, texture_1);
-    
-            this.gl.texImage2D(texture_1, 0, 3, image.width, image.height, 0, this.gl.RGB, this.gl.UNSIGNED_BYTE, image.data);
-            this.gl.activeTexture(texture_1);
+        this.gl.texImage2D(
+            this.gl.TEXTURE_2D, // Target
+            0,                 // Level of detail
+            this.gl.RGBA,      // Internal format
+            image.width,       // Width of the texture
+            image.height,      // Height of the texture
+            0,                 // Border (must be 0)
+            this.gl.RGBA,      // Format of the pixel data
+            this.gl.UNSIGNED_BYTE, // Data type of the pixel data
+            image              // Image source
+        );
 
-            const textureLocation = this.gl.getUniformLocation(this.program, "our_texture");
-            this.gl.uniform1i(textureLocation, 0)
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
 
-            const textureCoordLocation = this.gl.getAttribLocation(this.program, "tex_coord");
-            this.gl.enableVertexAttribArray(textureCoordLocation);
-            this.gl.vertexAttribPointer(textureCoordLocation, 2, this.gl.FLOAT, false, 8 * Float32Array.BYTES_PER_ELEMENT, 6 * Float32Array.BYTES_PER_ELEMENT);
-        };
-        image.src = "../images/master_of_puppets.jpg";       
+        const textureLocation = this.gl.getUniformLocation(this.program, "our_texture");
+        this.gl.uniform1i(textureLocation, 0);
     }
     render() {
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
