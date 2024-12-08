@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <link rel="icon" type="image/x-icon" href="../images/favicon.ico">
+    <link rel="stylesheet" href="./styles/styles.css" />
+    <title>Green Triangle</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"
+        integrity="sha512-zhHQR0/H5SEBL3Wn6yYSaTTZej12z0hVZKOv3TwCUXT1z5qeqGcXJLLrbERYRScEDDpYIJhPC1fk31gqR783iQ=="
+        crossorigin="anonymous" defer>
+    </script>
+  </head>
+
+  <body>
+    <a id="back" href="../index.html">
+      <img src="../images/back.gif">
+    </a>
+    <form>
+      <label for="task">Выберите задание:</label>
+        <select id="task" name="task">
+          <option value="tetrahedron">Тетраэдр</option>
+          <option value="cube-color">Куб с цветами</option>
+          <option value="cube-texture">Куб с текстурами</option>
+          <option value="circle">Круг</option>
+        </select>
+    </form>
+
+    <div class="center-container">
+      <canvas id="gl-canvas" width="800" height="600"></canvas>
+    <script src="../src/lab12.js" type="module"></script>
+  </body>
+</html>
