@@ -1,5 +1,5 @@
-import {} from 'https://cdn.jsdelivr.net/npm/gl-matrix@2.4.1/dist/gl-matrix.js';
-import {WebGLApp} from './lab10.js';
+import { } from 'https://cdn.jsdelivr.net/npm/gl-matrix@2.4.1/dist/gl-matrix.js';
+import { WebGLApp } from './lab10.js';
 
 var image = new Image();
 image.src = "../images/master_of_puppets.jpg"
@@ -22,8 +22,8 @@ function loadImages() {
 
     if (!(!texture1 || !texture1.files || texture1.files.length === 0)) {
         const reader = new FileReader();
-        reader.onload = function(e) {
-            image.onload = function(e) {
+        reader.onload = function (e) {
+            image.onload = function (e) {
                 loadedImages++;
                 checkAndRender();
             }
@@ -35,8 +35,8 @@ function loadImages() {
     var texture2 = document.getElementById("textureInput2");
     if (!(!texture2 || !texture2.files || texture2.files.length === 0)) {
         const reader = new FileReader();
-        reader.onload = function(e) {
-            image2.onload = function(e) {
+        reader.onload = function (e) {
+            image2.onload = function (e) {
                 loadedImages++;
                 checkAndRender();
             }
@@ -48,16 +48,15 @@ function loadImages() {
 
 function clamp(num, min, max) {
     return num <= min
-      ? min
-      : num >= max
-        ? max
-        : num
+        ? min
+        : num >= max
+            ? max
+            : num
 }
 
-function hsv2rgb(h,s,v)
-{
-  let f= (n,k=(n+h/60)%6) => v - v*s*Math.max( Math.min(k,4-k,1), 0);
-  return [f(5),f(3),f(1)];
+function hsv2rgb(h, s, v) {
+    let f = (n, k = (n + h / 60) % 6) => v - v * s * Math.max(Math.min(k, 4 - k, 1), 0);
+    return [f(5), f(3), f(1)];
 }
 
 class Tetrahedron {
@@ -95,27 +94,19 @@ class Tetrahedron {
         this.program = program;
         this.gl.useProgram(program);
     }
-        /**
-     * Initialize the camera and update the uniform.
-     */
+
     initCamera() {
         const projectionMatrix = mat4.create();
         const viewMatrix = mat4.create();
         const modelMatrix = mat4.create();
 
-        // Projection: Perspective projection
         mat4.perspective(projectionMatrix, Math.PI / 4, this.gl.canvas.width / this.gl.canvas.height, 0.1, 100.0);
-
-        // View: Camera at (0, 0, 5) looking at origin
         mat4.lookAt(viewMatrix, [0, 0, 5], [0, 0, 0], [0, 1, 0]);
-
-        // Model: Rotate the tetrahedron
         mat4.rotateY(modelMatrix, modelMatrix, Math.PI + Math.PI / 4);
         mat4.rotateX(modelMatrix, modelMatrix, Math.PI / 4);
 
         mat4.multiply(modelMatrix, this.translationMatrix, modelMatrix);
 
-        // Combine all matrices
         const modelViewProjectionMatrix = mat4.create();
         mat4.multiply(modelViewProjectionMatrix, projectionMatrix, viewMatrix);
         mat4.multiply(modelViewProjectionMatrix, modelViewProjectionMatrix, modelMatrix);
@@ -123,9 +114,7 @@ class Tetrahedron {
         const mvpLocation = this.gl.getUniformLocation(this.program, "u_modelViewProjectionMatrix");
         this.gl.uniformMatrix4fv(mvpLocation, false, modelViewProjectionMatrix);
     }
-    /**
-     * Initialize the camera and update the uniform.
-     */
+
     initVBO() {
         const vertexData = new Float32Array([
             // Triangle 1
@@ -215,31 +204,22 @@ class Cube {
         this.program = program;
         this.gl.useProgram(program);
     }
-        /**
-     * Initialize the camera and update the uniform.
-     */
+
     initCamera() {
         const projectionMatrix = mat4.create();
         const viewMatrix = mat4.create();
         const modelMatrix = mat4.create();
-        // Projection: Perspective projection
         mat4.perspective(projectionMatrix, Math.PI / 4, this.gl.canvas.width / this.gl.canvas.height, 0.1, 100.0);
-        // View: Camera at (0, 0, 5) looking at origin
         mat4.lookAt(viewMatrix, [0, 0, 5], [0, 0, 0], [0, 1, 0]);
-        // Model: Rotate the tetrahedron
         mat4.rotateY(modelMatrix, modelMatrix, Math.PI + Math.PI / 4);
         mat4.rotateX(modelMatrix, modelMatrix, Math.PI / 4);
         mat4.multiply(modelMatrix, this.translationMatrix, modelMatrix);
-        // Combine all matrices
         const modelViewProjectionMatrix = mat4.create();
         mat4.multiply(modelViewProjectionMatrix, projectionMatrix, viewMatrix);
         mat4.multiply(modelViewProjectionMatrix, modelViewProjectionMatrix, modelMatrix);
         const mvpLocation = this.gl.getUniformLocation(this.program, "u_modelViewProjectionMatrix");
         this.gl.uniformMatrix4fv(mvpLocation, false, modelViewProjectionMatrix);
     }
-    /**
-     * Initialize the camera and update the uniform.
-     */
     initVBO() {
         const vertexData = new Float32Array([
             // Front face
@@ -395,18 +375,15 @@ class TwoTextureCube {
         this.program = program;
         this.gl.useProgram(program);
     }
-        /**
-     * Initialize the camera and update the uniform.
-     */
+    /**
+ * Initialize the camera and update the uniform.
+ */
     initCamera() {
         const projectionMatrix = mat4.create();
         const viewMatrix = mat4.create();
         const modelMatrix = mat4.create();
-        // Projection: Perspective projection
         mat4.perspective(projectionMatrix, Math.PI / 4, this.gl.canvas.width / this.gl.canvas.height, 0.1, 100.0);
-        // View: Camera at (0, 0, 5) looking at origin
         mat4.lookAt(viewMatrix, [0, 0, 5], [0, 0, 0], [0, 1, 0]);
-        // Model: Rotate the tetrahedron
         mat4.rotateY(modelMatrix, modelMatrix, Math.PI + Math.PI / 4);
         mat4.rotateX(modelMatrix, modelMatrix, Math.PI / 4);
         mat4.multiply(modelMatrix, this.translationMatrix, modelMatrix);
@@ -417,9 +394,6 @@ class TwoTextureCube {
         const mvpLocation = this.gl.getUniformLocation(this.program, "u_modelViewProjectionMatrix");
         this.gl.uniformMatrix4fv(mvpLocation, false, modelViewProjectionMatrix);
     }
-    /**
-     * Initialize the camera and update the uniform.
-     */
     initVBO() {
         const vertexData = new Float32Array([
             // Front face
@@ -501,9 +475,9 @@ class TwoTextureCube {
             this.gl.TEXTURE_2D, // Target
             0,                 // Level of detail
             this.gl.RGBA,      // Internal format
-            image.width,       // Width of the texture
-            image.height,      // Height of the texture
-            0,                 // Border (must be 0)
+            image.width,       // Width
+            image.height,      // Height
+            0,                 // Border
             this.gl.RGBA,      // Format of the pixel data
             this.gl.UNSIGNED_BYTE, // Data type of the pixel data
             image              // Image source
@@ -521,9 +495,9 @@ class TwoTextureCube {
             this.gl.TEXTURE_2D, // Target
             0,                 // Level of detail
             this.gl.RGBA,      // Internal format
-            image.width,       // Width of the texture
-            image.height,      // Height of the texture
-            0,                 // Border (must be 0)
+            image.width,       // Width
+            image.height,      // Height
+            0,                 // Border
             this.gl.RGBA,      // Format of the pixel data
             this.gl.UNSIGNED_BYTE, // Data type of the pixel data
             image2              // Image source
@@ -566,6 +540,7 @@ class Circle {
         this.initCamera();
         this.gl.enable(this.gl.DEPTH_TEST);
     }
+
     initProgram() {
         const vertexShader = `#version 300 es
         in float t;
@@ -593,27 +568,21 @@ class Circle {
         this.program = program;
         this.gl.useProgram(program);
     }
-        /**
-     * Initialize the camera and update the uniform.
-     */
+
     initCamera() {
         const projectionMatrix = mat4.create();
         const viewMatrix = mat4.create();
         const modelMatrix = mat4.create();
 
-        // Projection: Perspective projection
         mat4.perspective(projectionMatrix, Math.PI / 4, this.gl.canvas.width / this.gl.canvas.height, 0.1, 100.0);
 
-        // View: Camera at (0, 0, 5) looking at origin
         mat4.lookAt(viewMatrix, [0, 0, 5], [0, 0, 0], [0, 1, 0]);
 
-        // Model: Rotate the tetrahedron
         // mat4.rotateY(modelMatrix, modelMatrix, Math.PI + Math.PI / 4);
         // mat4.rotateX(modelMatrix, modelMatrix, Math.PI / 4);
 
         mat4.multiply(modelMatrix, this.translationMatrix, modelMatrix);
 
-        // Combine all matrices
         const modelViewProjectionMatrix = mat4.create();
         mat4.multiply(modelViewProjectionMatrix, projectionMatrix, viewMatrix);
         mat4.multiply(modelViewProjectionMatrix, modelViewProjectionMatrix, modelMatrix);
@@ -621,9 +590,7 @@ class Circle {
         const mvpLocation = this.gl.getUniformLocation(this.program, "u_modelViewProjectionMatrix");
         this.gl.uniformMatrix4fv(mvpLocation, false, modelViewProjectionMatrix);
     }
-    /**
-     * Initialize the camera and update the uniform.
-     */
+
     initVBO() {
         var N = 3000;
         var vertexData = new Float32Array((N + 2) * 4);
@@ -637,18 +604,18 @@ class Circle {
         vertexData[3] = 1;
         for (var i = 1; i < (N + 1); i++) {
             var color = hsv2rgb(hue, 1, 1);
-            vertexData[4*i] = t;
-            vertexData[4*i+1] = color[0];
-            vertexData[4*i+2] = color[1];
-            vertexData[4*i+3] = color[2];
+            vertexData[4 * i] = t;
+            vertexData[4 * i + 1] = color[0];
+            vertexData[4 * i + 2] = color[1];
+            vertexData[4 * i + 3] = color[2];
             hue += hue_delta;
             t += delta;
         }
 
-        vertexData[4*N]   = vertexData[4];
-        vertexData[4*N+1] = vertexData[4+1];
-        vertexData[4*N+2] = vertexData[4+2];
-        vertexData[4*N+3] = vertexData[4+3];
+        vertexData[4 * N] = vertexData[4];
+        vertexData[4 * N + 1] = vertexData[4 + 1];
+        vertexData[4 * N + 2] = vertexData[4 + 2];
+        vertexData[4 * N + 3] = vertexData[4 + 3];
 
         const VBO = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, VBO);
@@ -660,6 +627,7 @@ class Circle {
         this.gl.enableVertexAttribArray(colorLocation);
         this.gl.vertexAttribPointer(colorLocation, 3, this.gl.FLOAT, false, 4 * Float32Array.BYTES_PER_ELEMENT, Float32Array.BYTES_PER_ELEMENT);
     }
+
     render() {
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
         this.initCamera();
@@ -687,7 +655,7 @@ class Circle {
 var figure = new Tetrahedron("#gl-canvas");
 
 var selectFigure = document.querySelector('#figure');
-selectFigure.addEventListener('change', function() {
+selectFigure.addEventListener('change', function () {
     if (selectFigure.options[0].selected === true) {
         figure = new Tetrahedron("#gl-canvas");
     }
