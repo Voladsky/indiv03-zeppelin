@@ -7,13 +7,58 @@ image.src = "../images/master_of_puppets.jpg"
 var image2 = new Image();
 image2.src = "../images/gang_shit.png";
 
+const btn = document.getElementById("loadImage");
+btn.addEventListener("click", loadImages);
+function loadImages() {
+    var texture1 = document.getElementById("textureInput1");
+    var loadedImages = 0;
+    function checkAndRender() {
+        console.log(loadedImages);
+        if (loadedImages === 2) {
+            figure = new figure.constructor("#gl-canvas");
+            figure.render();
+        }
+    }
+
+    if (!(!texture1 || !texture1.files || texture1.files.length === 0)) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            image.onload = function(e) {
+                loadedImages++;
+                checkAndRender();
+            }
+            image.src = e.target.result;
+        };
+        reader.readAsDataURL(texture1.files[0]);
+    }
+
+    var texture2 = document.getElementById("textureInput2");
+    if (!(!texture2 || !texture2.files || texture2.files.length === 0)) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            image2.onload = function(e) {
+                loadedImages++;
+                checkAndRender();
+            }
+            image2.src = e.target.result;
+        };
+        reader.readAsDataURL(texture2.files[0]);
+    }
+}
+
 function clamp(num, min, max) {
     return num <= min
       ? min
       : num >= max
         ? max
         : num
-  }
+}
+
+function hsv2rgb(h,s,v)
+{
+  let f= (n,k=(n+h/60)%6) => v - v*s*Math.max( Math.min(k,4-k,1), 0);
+  return [f(5),f(3),f(1)];
+}
 
 class Tetrahedron {
     constructor(canvasId) {
@@ -445,8 +490,12 @@ class TwoTextureCube {
         this.gl.activeTexture(this.gl.TEXTURE0);
         this.gl.bindTexture(this.gl.TEXTURE_2D, texture_1);
 
-
         //this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
+
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR)
 
         this.gl.texImage2D(
             this.gl.TEXTURE_2D, // Target
@@ -460,13 +509,13 @@ class TwoTextureCube {
             image              // Image source
         );
 
+        this.gl.activeTexture(this.gl.TEXTURE1);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, texture_2);
+
         this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
         this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
         this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
-        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR)
-
-        this.gl.activeTexture(this.gl.TEXTURE1);
-        this.gl.bindTexture(this.gl.TEXTURE_2D, texture_2);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
 
         this.gl.texImage2D(
             this.gl.TEXTURE_2D, // Target
@@ -479,11 +528,6 @@ class TwoTextureCube {
             this.gl.UNSIGNED_BYTE, // Data type of the pixel data
             image2              // Image source
         );
-
-        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
-        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
-        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
-        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
 
         const textureLocation = this.gl.getUniformLocation(this.program, "our_texture");
         this.gl.uniform1i(textureLocation, 0);
@@ -509,6 +553,137 @@ class TwoTextureCube {
     }
 };
 
+
+class Circle {
+    constructor(canvasId) {
+        this.app = WebGLApp;
+        this.app = new WebGLApp(canvasId);
+        this.gl = this.app.getGL();
+        this.translationMatrix = mat4.create();
+        this.ab = [1, 1];
+        this.initProgram();
+        this.initVBO();
+        this.initCamera();
+        this.gl.enable(this.gl.DEPTH_TEST);
+    }
+    initProgram() {
+        const vertexShader = `#version 300 es
+        in float t;
+        in vec3 color;
+        out vec3 v_color;
+
+        uniform vec2 ab;
+        uniform mat4 u_modelViewProjectionMatrix;
+        void main() {
+            vec2 scale = vec2(step(0.0, t));
+            vec2 ellipsoid_pos = scale * ab * vec2(sin(t), cos(t));
+            gl_Position = u_modelViewProjectionMatrix * vec4(ellipsoid_pos, 0.0, 1.0);
+            v_color = color;
+        }
+        `;
+        const fragmentShader = `#version 300 es
+        precision lowp float;
+        in vec3 v_color;
+        out vec4 color;
+        void main() {
+            color = vec4(v_color, 1.0);
+        }
+        `;
+        let program = this.app.createProgram(vertexShader, fragmentShader);
+        this.program = program;
+        this.gl.useProgram(program);
+    }
+        /**
+     * Initialize the camera and update the uniform.
+     */
+    initCamera() {
+        const projectionMatrix = mat4.create();
+        const viewMatrix = mat4.create();
+        const modelMatrix = mat4.create();
+
+        // Projection: Perspective projection
+        mat4.perspective(projectionMatrix, Math.PI / 4, this.gl.canvas.width / this.gl.canvas.height, 0.1, 100.0);
+
+        // View: Camera at (0, 0, 5) looking at origin
+        mat4.lookAt(viewMatrix, [0, 0, 5], [0, 0, 0], [0, 1, 0]);
+
+        // Model: Rotate the tetrahedron
+        // mat4.rotateY(modelMatrix, modelMatrix, Math.PI + Math.PI / 4);
+        // mat4.rotateX(modelMatrix, modelMatrix, Math.PI / 4);
+
+        mat4.multiply(modelMatrix, this.translationMatrix, modelMatrix);
+
+        // Combine all matrices
+        const modelViewProjectionMatrix = mat4.create();
+        mat4.multiply(modelViewProjectionMatrix, projectionMatrix, viewMatrix);
+        mat4.multiply(modelViewProjectionMatrix, modelViewProjectionMatrix, modelMatrix);
+
+        const mvpLocation = this.gl.getUniformLocation(this.program, "u_modelViewProjectionMatrix");
+        this.gl.uniformMatrix4fv(mvpLocation, false, modelViewProjectionMatrix);
+    }
+    /**
+     * Initialize the camera and update the uniform.
+     */
+    initVBO() {
+        var N = 3000;
+        var vertexData = new Float32Array((N + 2) * 4);
+        var t = 0;
+        var delta = (2 * Math.PI) / N;
+        var hue = 0;
+        var hue_delta = 360.0 / N;
+        vertexData[0] = -1;
+        vertexData[1] = 1;
+        vertexData[2] = 1;
+        vertexData[3] = 1;
+        for (var i = 1; i < (N + 1); i++) {
+            var color = hsv2rgb(hue, 1, 1);
+            vertexData[4*i] = t;
+            vertexData[4*i+1] = color[0];
+            vertexData[4*i+2] = color[1];
+            vertexData[4*i+3] = color[2];
+            hue += hue_delta;
+            t += delta;
+        }
+
+        vertexData[4*N]   = vertexData[4];
+        vertexData[4*N+1] = vertexData[4+1];
+        vertexData[4*N+2] = vertexData[4+2];
+        vertexData[4*N+3] = vertexData[4+3];
+
+        const VBO = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, VBO);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, vertexData, this.gl.DYNAMIC_DRAW);
+        const positionLocation = this.gl.getAttribLocation(this.program, "t");
+        this.gl.enableVertexAttribArray(positionLocation);
+        this.gl.vertexAttribPointer(positionLocation, 1, this.gl.FLOAT, false, 4 * Float32Array.BYTES_PER_ELEMENT, 0);
+        const colorLocation = this.gl.getAttribLocation(this.program, "color");
+        this.gl.enableVertexAttribArray(colorLocation);
+        this.gl.vertexAttribPointer(colorLocation, 3, this.gl.FLOAT, false, 4 * Float32Array.BYTES_PER_ELEMENT, Float32Array.BYTES_PER_ELEMENT);
+    }
+    render() {
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+        this.initCamera();
+
+        const ab_location = this.gl.getUniformLocation(this.program, "ab");
+        this.gl.uniform2fv(ab_location, this.ab);
+
+
+        this.gl.drawArrays(this.gl.TRIANGLE_FAN, 0, 3001);
+    }
+
+    translate(dx, dy, dz) {
+        mat4.translate(this.translationMatrix, this.translationMatrix, [dx, dy, dz]);
+    }
+
+    scaleX(value) {
+        this.ab[0] += value;
+    }
+
+    scaleY(value) {
+        this.ab[1] += value;
+    }
+}
+
 var figure = new Tetrahedron("#gl-canvas");
 
 var selectFigure = document.querySelector('#figure');
@@ -521,6 +696,9 @@ selectFigure.addEventListener('change', function() {
     }
     else if (selectFigure.options[2].selected === true) {
         figure = new TwoTextureCube("#gl-canvas");
+    }
+    else if (selectFigure.options[3].selected === true) {
+        figure = new Circle("#gl-canvas");
     }
     figure.render();
 });
@@ -550,6 +728,18 @@ window.addEventListener('keydown', function (e) {
             break;
         case "NumpadSubtract":
             figure.mix(-0.1);
+            break;
+        case "Numpad8":
+            figure.scaleY(0.1);
+            break;
+        case "Numpad2":
+            figure.scaleY(-0.1);
+            break;
+        case "Numpad6":
+            figure.scaleX(0.1);
+            break;
+        case "Numpad4":
+            figure.scaleX(-0.1);
             break;
     }
     figure.render();
