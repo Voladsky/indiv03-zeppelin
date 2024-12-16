@@ -3,11 +3,15 @@ import { parseOBJ } from "./obj-loader.js";
 import { mat4 } from "https://cdn.jsdelivr.net/npm/gl-matrix@3.4.3/+esm";
 
 class Object3D {
-    constructor(gl, program, objData, textureUrl) {
+    constructor(gl, program, objData, textureUrl, scale) {
         this.gl = gl;
         this.program = program;
 
         const { positions, texCoords } = parseOBJ(objData);
+
+        for (let i = 0; i < positions.length; i++) {
+            positions[i] *= scale;
+        }
 
         this.vertexCount = positions.length / 3;
 
@@ -66,14 +70,18 @@ class Object3D {
         gl.bufferData(gl.ARRAY_BUFFER, matrices, gl.DYNAMIC_DRAW);
     }
 
-    renderInstanced(instanceCount) {
+    renderInstanced(instanceCount, viewMatrix) {
         const gl = this.gl;
+    
         gl.useProgram(this.program);
-
+    
+        // Set the uniform matrix explicitly
+        gl.uniformMatrix4fv(gl.getUniformLocation(this.program, "uMatrix"), false, viewMatrix);
+    
         gl.bindVertexArray(this.vao);
         gl.bindTexture(gl.TEXTURE_2D, this.texture);
         gl.drawArraysInstanced(gl.TRIANGLES, 0, this.vertexCount, instanceCount);
-
+    
         gl.bindVertexArray(null);
     }
 
@@ -91,6 +99,51 @@ class Object3D {
     }
 }
 
+var camera_position = [0, 0, 5];
+var camera_direction = [0, 0, 0];
+
+function initCamera(gl) {
+    const projectionMatrix = mat4.create();
+    const viewMatrix = mat4.create();
+    const modelMatrix = mat4.create();
+
+    mat4.perspective(projectionMatrix, Math.PI / 4, gl.canvas.width / gl.canvas.height, 0.1, 100.0);
+    mat4.lookAt(viewMatrix, camera_position, camera_direction, [0, 1, 0]);
+    mat4.rotateY(modelMatrix, modelMatrix, Math.PI + Math.PI / 4);
+    mat4.rotateX(modelMatrix, modelMatrix, Math.PI / 4);
+
+    const modelViewProjectionMatrix = mat4.create();
+    mat4.multiply(modelViewProjectionMatrix, projectionMatrix, viewMatrix);
+    mat4.multiply(modelViewProjectionMatrix, modelViewProjectionMatrix, modelMatrix);
+
+
+    return modelViewProjectionMatrix;
+}
+
+window.addEventListener('keydown', function (e) {
+    switch (e.code) {
+        case "KeyW":
+            camera_position = [camera_position[0], camera_position[1], camera_position[2] - 0.1]
+            camera_direction = [camera_direction[0], camera_direction[1], camera_direction[2] - 0.1]
+            break;
+        case "KeyA":
+            camera_direction = [camera_direction[0] - 0.1, camera_direction[1], camera_direction[2]]
+            break;
+        case "KeyS":
+            camera_position = [camera_position[0], camera_position[1], camera_position[2] + 0.1]
+            camera_direction = [camera_direction[0], camera_direction[1], camera_direction[2] + 0.1]
+            break;
+        case "KeyD":
+            camera_direction = [camera_direction[0] + 0.1, camera_direction[1], camera_direction[2]]
+            break;
+        case "ArrowUp":
+            camera_direction = [camera_direction[0], camera_direction[1] + 0.1, camera_direction[2]]
+            break;
+        case "ArrowDown":
+            camera_direction = [camera_direction[0], camera_direction[1] - 0.1, camera_direction[2]]
+            break;
+    }
+});
 (async () => {
     function resizeCanvasToDisplaySize(canvas) {
         const realToCSSPixels = window.devicePixelRatio || 1;
@@ -142,12 +195,12 @@ class Object3D {
     // Load the cat model
     const catResponse = await fetch("../models/cat.obj");
     const catObjData = await catResponse.text();
-    //const cat = new Object3D(gl, program, catObjData, "../images/texture.png");
+    const cat = new Object3D(gl, program, catObjData, "../images/texture.png", 1.0);
 
     // Load the mouse model
     const ratResponse = await fetch("../models/rat.obj");
     const ratObjData = await ratResponse.text();
-    const rat = new Object3D(gl, program, ratObjData, "../images/rat_texture.png");
+    const rat = new Object3D(gl, program, ratObjData, "../images/rat_texture.png", 0.5);
 
     function render() {
         resizeCanvasToDisplaySize(canvas);
@@ -158,11 +211,21 @@ class Object3D {
         gl.enable(gl.DEPTH_TEST);
 
         const now = Date.now() / 1000;
-        const catMatrix = mat4.create();
-        mat4.rotateY(catMatrix, catMatrix, now);
-        //cat.render(catMatrix);
 
+        
         // Create 5 transformation matrices for the mice
+        const viewMatrix = initCamera(gl);
+
+        const catMatrices = new Float32Array(16 * 1); // 5 matrices
+        for (let i = 0; i < 1; i++) {
+            const matrix = mat4.create();
+            mat4.rotateY(matrix, matrix, now);
+            catMatrices.set(matrix, i * 16);
+        }
+        cat.updateInstanceMatrices(catMatrices);
+        cat.renderInstanced(1, viewMatrix);
+
+
         const ratMatrices = new Float32Array(16 * 5); // 5 matrices
         for (let i = 0; i < 5; i++) {
             const angle = (Math.PI * 2 * i) / 5 + now; // Circular motion
@@ -174,7 +237,7 @@ class Object3D {
             ratMatrices.set(matrix, i * 16);
         }
         rat.updateInstanceMatrices(ratMatrices);
-        rat.renderInstanced(5);
+        rat.renderInstanced(5, viewMatrix);
 
         requestAnimationFrame(render);
     }
