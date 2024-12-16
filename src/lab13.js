@@ -72,16 +72,16 @@ class Object3D {
 
     renderInstanced(instanceCount, viewMatrix) {
         const gl = this.gl;
-    
+
         gl.useProgram(this.program);
-    
+
         // Set the uniform matrix explicitly
         gl.uniformMatrix4fv(gl.getUniformLocation(this.program, "uMatrix"), false, viewMatrix);
-    
+
         gl.bindVertexArray(this.vao);
         gl.bindTexture(gl.TEXTURE_2D, this.texture);
         gl.drawArraysInstanced(gl.TRIANGLES, 0, this.vertexCount, instanceCount);
-    
+
         gl.bindVertexArray(null);
     }
 
@@ -101,6 +101,8 @@ class Object3D {
 
 var camera_position = [0, 0, 5];
 var camera_direction = [0, 0, 0];
+var cameraMatrix = mat4.create();
+mat4.translate(cameraMatrix, cameraMatrix, camera_position); // Initial position
 
 function initCamera(gl) {
     const projectionMatrix = mat4.create();
@@ -120,30 +122,62 @@ function initCamera(gl) {
     return modelViewProjectionMatrix;
 }
 
+function applyCameraTransformations() {
+    mat4.getTranslation(camera_position, cameraMatrix);
+    const forward = [0, 0, -1];
+    vec3.transformMat4(camera_direction, forward, cameraMatrix);
+}
+
 window.addEventListener('keydown', function (e) {
+    const translationSpeed = 0.1;
+    const rotationSpeed = 0.05;
+
     switch (e.code) {
         case "KeyW":
-            camera_position = [camera_position[0], camera_position[1], camera_position[2] - 0.1]
-            camera_direction = [camera_direction[0], camera_direction[1], camera_direction[2] - 0.1]
-            break;
-        case "KeyA":
-            camera_direction = [camera_direction[0] - 0.1, camera_direction[1], camera_direction[2]]
+            // Move forward
+            const forwardVector = vec3.create();
+            vec3.set(forwardVector, 0, 0, -translationSpeed);
+            mat4.translate(cameraMatrix, cameraMatrix, forwardVector);
             break;
         case "KeyS":
-            camera_position = [camera_position[0], camera_position[1], camera_position[2] + 0.1]
-            camera_direction = [camera_direction[0], camera_direction[1], camera_direction[2] + 0.1]
+            // Move backward
+            const backwardVector = vec3.create();
+            vec3.set(backwardVector, 0, 0, translationSpeed);
+            mat4.translate(cameraMatrix, cameraMatrix, backwardVector);
+            break;
+        case "KeyA":
+            // Strafe left
+            const leftVector = vec3.create();
+            vec3.set(leftVector, -translationSpeed, 0, 0);
+            mat4.translate(cameraMatrix, cameraMatrix, leftVector);
             break;
         case "KeyD":
-            camera_direction = [camera_direction[0] + 0.1, camera_direction[1], camera_direction[2]]
+            // Strafe right
+            const rightVector = vec3.create();
+            vec3.set(rightVector, translationSpeed, 0, 0);
+            mat4.translate(cameraMatrix, cameraMatrix, rightVector);
+            break;
+        case "ArrowLeft":
+            // Rotate camera left (yaw)
+            mat4.rotateY(cameraMatrix, cameraMatrix, rotationSpeed);
+            break;
+        case "ArrowRight":
+            // Rotate camera right (yaw)
+            mat4.rotateY(cameraMatrix, cameraMatrix, -rotationSpeed);
             break;
         case "ArrowUp":
-            camera_direction = [camera_direction[0], camera_direction[1] + 0.1, camera_direction[2]]
+            // Rotate camera up (pitch)
+            mat4.rotateX(cameraMatrix, cameraMatrix, rotationSpeed);
             break;
         case "ArrowDown":
-            camera_direction = [camera_direction[0], camera_direction[1] - 0.1, camera_direction[2]]
+            // Rotate camera down (pitch)
+            mat4.rotateX(cameraMatrix, cameraMatrix, -rotationSpeed);
             break;
     }
+
+    applyCameraTransformations(); // Update position and direction
 });
+
 (async () => {
     function resizeCanvasToDisplaySize(canvas) {
         const realToCSSPixels = window.devicePixelRatio || 1;
@@ -195,12 +229,12 @@ window.addEventListener('keydown', function (e) {
     // Load the cat model
     const catResponse = await fetch("../models/cat.obj");
     const catObjData = await catResponse.text();
-    const cat = new Object3D(gl, program, catObjData, "../images/texture.png", 1.0);
+    const cat = new Object3D(gl, program, catObjData, "../images/texture.png", 1.5);
 
     // Load the mouse model
     const ratResponse = await fetch("../models/rat.obj");
     const ratObjData = await ratResponse.text();
-    const rat = new Object3D(gl, program, ratObjData, "../images/rat_texture.png", 0.5);
+    const rat = new Object3D(gl, program, ratObjData, "../images/rat_texture.png", 0.2);
 
     function render() {
         resizeCanvasToDisplaySize(canvas);
@@ -212,7 +246,7 @@ window.addEventListener('keydown', function (e) {
 
         const now = Date.now() / 1000;
 
-        
+
         // Create 5 transformation matrices for the mice
         const viewMatrix = initCamera(gl);
 
