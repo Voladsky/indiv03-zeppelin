@@ -93,6 +93,46 @@ export class Object3D {
         gl.uniformMatrix4fv(gl.getUniformLocation(this.program, "uViewMatrix"), false, view);
         gl.uniformMatrix4fv(gl.getUniformLocation(this.program, "uProjectionMatrix"), false, projection);
 
+        // Get uniform locations for light structs
+        const pointLightLoc = {
+            position: gl.getUniformLocation(this.program, "uPointLight.position"),
+            color: gl.getUniformLocation(this.program, "uPointLight.color"),
+            intensity: gl.getUniformLocation(this.program, "uPointLight.intensity"),
+        };
+
+        const dirLightLoc = {
+            direction: gl.getUniformLocation(this.program, "uDirLight.direction"),
+            color: gl.getUniformLocation(this.program, "uDirLight.color"),
+            intensity: gl.getUniformLocation(this.program, "uDirLight.intensity"),
+        };
+
+        const spotLightLoc = {
+            position: gl.getUniformLocation(this.program, "uSpotLight.position"),
+            direction: gl.getUniformLocation(this.program, "uSpotLight.direction"),
+            color: gl.getUniformLocation(this.program, "uSpotLight.color"),
+            intensity: gl.getUniformLocation(this.program, "uSpotLight.intensity"),
+            cutoff: gl.getUniformLocation(this.program, "uSpotLight.cutoff"),
+        };
+
+        // Set values for Point Light
+        gl.uniform3fv(pointLightLoc.position, [1.0, 2.0, 3.0]);  // Position
+        gl.uniform3fv(pointLightLoc.color, [1.0, 0.8, 0.6]);     // Color
+        gl.uniform1f(pointLightLoc.intensity, 1.5);              // Intensity
+
+        // Set values for Directional Light
+        gl.uniform3fv(dirLightLoc.direction, [-0.5, -1.0, -0.5]); // Direction
+        gl.uniform3fv(dirLightLoc.color, [1.0, 1.0, 1.0]);        // Color
+        gl.uniform1f(dirLightLoc.intensity, 0.8);                 // Intensity
+
+        // Set values for Spotlight
+        gl.uniform3fv(spotLightLoc.position, [2.0, 4.0, 2.0]);    // Position
+        gl.uniform3fv(spotLightLoc.direction, [-1.0, -1.0, -1.0]);// Direction
+        gl.uniform3fv(spotLightLoc.color, [1.0, 0.5, 0.2]);       // Color
+        gl.uniform1f(spotLightLoc.intensity, 2.0);                // Intensity
+        gl.uniform1f(spotLightLoc.cutoff, Math.cos(Math.PI / 6)); // Spotlight cutoff (30 degrees)
+
+        gl.uniform1i(gl.getUniformLocation(this.program, "uShadingMode"), 1);
+
         gl.bindVertexArray(this.vao);
         gl.bindTexture(gl.TEXTURE_2D, this.texture);
         gl.drawArrays(gl.TRIANGLES, 0, this.vertexCount);
@@ -135,7 +175,7 @@ function initModelViewProjection(gl) {
     mat4.rotateY(modelMatrix, modelMatrix, Math.PI + Math.PI / 4);
     mat4.rotateX(modelMatrix, modelMatrix, Math.PI / 4);
 
-    return {model: modelMatrix, view: viewMatrix, projection: projectionMatrix};
+    return { model: modelMatrix, view: viewMatrix, projection: projectionMatrix };
 }
 
 function applyCameraTransformations() {
@@ -302,16 +342,13 @@ var ratRandoms = [Math.random() + 0.5, Math.random() + 0.5, Math.random() + 0.5,
             resultColor += spotLightColor;
         }
 
-        // Phong Shading (Shading Mode 0)
         if (uShadingMode == 0) {
             resultColor += pointLightColor + dirLightColor;
         }
-        // Toon Shading (Shading Mode 1)
         else if (uShadingMode == 1) {
             float toon = toonShade(normal, lightDir);
             resultColor += uPointLight.color * toon * uPointLight.intensity;
         }
-        // Cook-Torrance (Shading Mode 2 - simplified example)
         else if (uShadingMode == 2) {
             resultColor += pointLightColor * 0.5 + dirLightColor * 0.5;
         }
@@ -346,7 +383,7 @@ var ratRandoms = [Math.random() + 0.5, Math.random() + 0.5, Math.random() + 0.5,
         // Create 5 transformation matrices for the mice
         //const mvpMatrix = initCamera(gl);
 
-        const {model, view, projection} = initModelViewProjection(gl);
+        const { model, view, projection } = initModelViewProjection(gl);
 
         cat.render(model, view, projection);
 
