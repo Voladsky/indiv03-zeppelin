@@ -48,6 +48,10 @@ export class Object3D {
         image.onload = () => {
             gl.bindTexture(gl.TEXTURE_2D, this.texture);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
             gl.generateMipmap(gl.TEXTURE_2D);
         };
     }
@@ -85,7 +89,7 @@ export class Object3D {
 
     //     gl.bindVertexArray(null);
     // }
-    render(model, view, projection) {
+    render(model, view, projection, shadingMode) {
         const gl = this.gl;
 
         gl.useProgram(this.program);
@@ -131,7 +135,9 @@ export class Object3D {
         gl.uniform1f(spotLightLoc.intensity, 2.0);                // Intensity
         gl.uniform1f(spotLightLoc.cutoff, Math.cos(Math.PI / 6)); // Spotlight cutoff (30 degrees)
 
-        gl.uniform1i(gl.getUniformLocation(this.program, "uShadingMode"), 1);
+        gl.uniform1i(gl.getUniformLocation(this.program, "uShadingMode"), shadingMode);
+
+        gl.uniform3fv(gl.getUniformLocation(this.program, "uViewPos"), camera_position);
 
         gl.bindVertexArray(this.vao);
         gl.bindTexture(gl.TEXTURE_2D, this.texture);
@@ -250,6 +256,7 @@ var ratRandoms = [Math.random() + 0.5, Math.random() + 0.5, Math.random() + 0.5,
     }
 
     const canvas = document.getElementById("gl-canvas");
+    /** @type {WebGL2RenderingContext} */
     const gl = canvas.getContext("webgl2");
 
     if (!gl) {
@@ -364,10 +371,16 @@ var ratRandoms = [Math.random() + 0.5, Math.random() + 0.5, Math.random() + 0.5,
     const catObjData = await catResponse.text();
     const cat = new Object3D(gl, program, catObjData, "../images/texture.png", 1.5);
 
+    
+    const kowalskiResponse = await fetch("../models/Kowalski.obj");
+    const kowalskiObjData = await kowalskiResponse.text();
+    const kowalski = new Object3D(gl, program, kowalskiObjData, "../images/Kowalski.png", 0.2);
+
+    
     // Load the mouse model
-    // const ratResponse = await fetch("../models/rat.obj");
-    // const ratObjData = await ratResponse.text();
-    // const rat = new Object3D(gl, program, ratObjData, "../images/rat_texture.png", 0.2);
+    const ratResponse = await fetch("../models/rat.obj");
+    const ratObjData = await ratResponse.text();
+    const rat = new Object3D(gl, program, ratObjData, "../images/rat_texture.png", 0.2);
 
     function render() {
         resizeCanvasToDisplaySize(canvas);
@@ -385,8 +398,14 @@ var ratRandoms = [Math.random() + 0.5, Math.random() + 0.5, Math.random() + 0.5,
 
         const { model, view, projection } = initModelViewProjection(gl);
 
-        cat.render(model, view, projection);
+        cat.render(model, view, projection, 0);
 
+        mat4.translate(model, model, [0, 0, 2])
+        rat.render(model, view, projection, 1);
+
+        mat4.translate(model, model, [0, 0, 1])
+
+        kowalski.render(model, view, projection, 2);
         requestAnimationFrame(render);
     }
 
