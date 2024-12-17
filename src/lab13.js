@@ -178,6 +178,8 @@ window.addEventListener('keydown', function (e) {
     applyCameraTransformations(); // Update position and direction
 });
 
+var ratRandoms = [Math.random() + 0.5, Math.random() + 0.5, Math.random() + 0.5, Math.random() + 0.5, Math.random() + 0.5];
+
 (async () => {
     function resizeCanvasToDisplaySize(canvas) {
         const realToCSSPixels = window.devicePixelRatio || 1;
@@ -268,6 +270,7 @@ window.addEventListener('keydown', function (e) {
             const z = Math.sin(angle) * 2.0;
             mat4.translate(matrix, matrix, [x, 0, z]);
             mat4.rotateY(matrix, matrix, now);
+            mat4.scale(matrix, matrix, [ratRandoms[i], ratRandoms[i], ratRandoms[i]]);
             ratMatrices.set(matrix, i * 16);
         }
         rat.updateInstanceMatrices(ratMatrices);
