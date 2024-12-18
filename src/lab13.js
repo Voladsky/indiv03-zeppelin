@@ -333,14 +333,14 @@ for (var i = 0; i < ratSize; i++) {
   const program = createProgram(gl, vertexShaderSrc, fragmentShaderSrc);
 
   // Load the cat model
-  const catResponse = await fetch("../models/cat.obj");
+  const catResponse = await fetch("../models/Kowalski.obj");
   const catObjData = await catResponse.text();
   const cat = new Object3D(
     gl,
     program,
     catObjData,
-    "../images/texture.png",
-    8.0
+    "../images/Kowalski.png",
+    1
   );
 
   // Load the mouse model
