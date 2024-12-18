@@ -226,7 +226,7 @@ document.addEventListener("click", function () {
   document.body.requestPointerLock();
 });
 
-const ratSize = 1e3;
+const ratSize = 2e3;
 const ratRandoms = [];
 for (var i = 0; i < ratSize; i++) {
   ratRandoms.push(Math.random() + 0.5);
@@ -333,13 +333,13 @@ for (var i = 0; i < ratSize; i++) {
   const program = createProgram(gl, vertexShaderSrc, fragmentShaderSrc);
 
   // Load the cat model
-  const catResponse = await fetch("../models/Kowalski.obj");
+  const catResponse = await fetch("../models/cat.obj");
   const catObjData = await catResponse.text();
   const cat = new Object3D(
     gl,
     program,
     catObjData,
-    "../images/Kowalski.png",
+    "../images/texture.png",
     1
   );
 
