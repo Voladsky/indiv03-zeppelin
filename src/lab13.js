@@ -1,6 +1,7 @@
 import { createProgram } from "./webgl-utils.js";
 import { parseOBJ } from "./obj-loader.js";
 import { mat4 } from "https://cdn.jsdelivr.net/npm/gl-matrix@3.4.3/+esm";
+import { Camera } from "./camera.js"
 
 class Object3D {
     constructor(gl, program, objData, textureUrl, scale) {
@@ -99,83 +100,8 @@ class Object3D {
     }
 }
 
-var camera_position = [0, 0, 5];
-var camera_direction = [0, 0, 0];
-var cameraMatrix = mat4.create();
-mat4.translate(cameraMatrix, cameraMatrix, camera_position); // Initial position
-
-function initCamera(gl) {
-    const projectionMatrix = mat4.create();
-    const viewMatrix = mat4.create();
-    const modelMatrix = mat4.create();
-
-    mat4.perspective(projectionMatrix, Math.PI / 4, gl.canvas.width / gl.canvas.height, 0.1, 100.0);
-    mat4.lookAt(viewMatrix, camera_position, camera_direction, [0, 1, 0]);
-    mat4.rotateY(modelMatrix, modelMatrix, Math.PI + Math.PI / 4);
-    mat4.rotateX(modelMatrix, modelMatrix, Math.PI / 4);
-
-    const modelViewProjectionMatrix = mat4.create();
-    mat4.multiply(modelViewProjectionMatrix, projectionMatrix, viewMatrix);
-    mat4.multiply(modelViewProjectionMatrix, modelViewProjectionMatrix, modelMatrix);
-
-
-    return modelViewProjectionMatrix;
-}
-
-function applyCameraTransformations() {
-    mat4.getTranslation(camera_position, cameraMatrix);
-    const forward = [0, 0, -1];
-    vec3.transformMat4(camera_direction, forward, cameraMatrix);
-}
-
-window.addEventListener('keydown', function (e) {
-    const translationSpeed = 0.1;
-    const rotationSpeed = 0.05;
-
-    switch (e.code) {
-        case "KeyW":
-            // Move forward
-            const forwardVector = vec3.create();
-            vec3.set(forwardVector, 0, 0, -translationSpeed);
-            mat4.translate(cameraMatrix, cameraMatrix, forwardVector);
-            break;
-        case "KeyS":
-            // Move backward
-            const backwardVector = vec3.create();
-            vec3.set(backwardVector, 0, 0, translationSpeed);
-            mat4.translate(cameraMatrix, cameraMatrix, backwardVector);
-            break;
-        case "KeyA":
-            // Strafe left
-            const leftVector = vec3.create();
-            vec3.set(leftVector, -translationSpeed, 0, 0);
-            mat4.translate(cameraMatrix, cameraMatrix, leftVector);
-            break;
-        case "KeyD":
-            // Strafe right
-            const rightVector = vec3.create();
-            vec3.set(rightVector, translationSpeed, 0, 0);
-            mat4.translate(cameraMatrix, cameraMatrix, rightVector);
-            break;
-        case "ArrowLeft":
-            // Rotate camera left (yaw)
-            mat4.rotateY(cameraMatrix, cameraMatrix, rotationSpeed);
-            break;
-        case "ArrowRight":
-            // Rotate camera right (yaw)
-            mat4.rotateY(cameraMatrix, cameraMatrix, -rotationSpeed);
-            break;
-        case "ArrowUp":
-            // Rotate camera up (pitch)
-            mat4.rotateX(cameraMatrix, cameraMatrix, rotationSpeed);
-            break;
-        case "ArrowDown":
-            // Rotate camera down (pitch)
-            mat4.rotateX(cameraMatrix, cameraMatrix, -rotationSpeed);
-            break;
-    }
-
-    applyCameraTransformations(); // Update position and direction
+document.addEventListener("click", function () {
+    document.body.requestPointerLock();
 });
 
 var ratRandoms = [Math.random() + 0.5, Math.random() + 0.5, Math.random() + 0.5, Math.random() + 0.5, Math.random() + 0.5];
@@ -226,6 +152,39 @@ var ratRandoms = [Math.random() + 0.5, Math.random() + 0.5, Math.random() + 0.5,
         }
     `;
 
+    const camera = new Camera([0.0, 0.0, 5.0]); // Position at (0, 0, 5)
+    const projectionMatrix = mat4.create(); // For perspective projection
+
+    mat4.perspective(
+        projectionMatrix,
+        Math.PI / 4, // 45 degrees field of view
+        canvas.width / canvas.height, // Aspect ratio
+        0.1, // Near plane
+        100.0 // Far plane
+    );
+
+    const keys = {};
+    window.addEventListener('keydown', (e) => { keys[e.key] = true; });
+    window.addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+    function update(deltaTime) {
+        if (keys['w']) camera.processKeyboard('FORWARD', deltaTime);
+        if (keys['s']) camera.processKeyboard('BACKWARD', deltaTime);
+        if (keys['a']) camera.processKeyboard('LEFT', deltaTime);
+        if (keys['d']) camera.processKeyboard('RIGHT', deltaTime);
+        if (keys['q']) camera.processKeyboard('UP', deltaTime);
+        if (keys['e']) camera.processKeyboard('DOWN', deltaTime);
+    }
+
+
+    document.body.addEventListener("mousemove", function (event) {
+        camera.processMouseMovement(event.movementX, -event.movementY);
+    });
+
+    document.body.addEventListener('wheel', (event) => {
+        camera.processMouseScroll(event.deltaY * 0.1);
+    });
+
     const program = createProgram(gl, vertexShaderSrc, fragmentShaderSrc);
 
     // Load the cat model
@@ -241,43 +200,46 @@ var ratRandoms = [Math.random() + 0.5, Math.random() + 0.5, Math.random() + 0.5,
     function render() {
         resizeCanvasToDisplaySize(canvas);
         gl.viewport(0, 0, canvas.width, canvas.height);
-
+    
         gl.clearColor(0, 0, 0, 1);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.enable(gl.DEPTH_TEST);
-
+    
+        const deltaTime = 0.016; // Approximate for simplicity
+        update(deltaTime); // Update camera position
+    
+        const viewMatrix = camera.getViewMatrix(); // Get updated view matrix
+        const vpMatrix = mat4.create(); // Combined View-Projection matrix
+        mat4.multiply(vpMatrix, projectionMatrix, viewMatrix);
+    
         const now = Date.now() / 1000;
-
-
-        // Create 5 transformation matrices for the mice
-        const viewMatrix = initCamera(gl);
-
-        const catMatrices = new Float32Array(16 * 1); // 5 matrices
-        for (let i = 0; i < 1; i++) {
-            const matrix = mat4.create();
-            mat4.rotateY(matrix, matrix, now);
-            catMatrices.set(matrix, i * 16);
-        }
+    
+        // Pass VP matrix to render cat
+        const catMatrices = new Float32Array(16);
+        const matrix = mat4.create();
+        mat4.rotateY(matrix, matrix, now);
+        catMatrices.set(matrix);
         cat.updateInstanceMatrices(catMatrices);
-        cat.renderInstanced(1, viewMatrix);
-
-
-        const ratMatrices = new Float32Array(16 * 5); // 5 matrices
+        cat.renderInstanced(1, vpMatrix);
+    
+        // Pass VP matrix to render rats
+        const ratMatrices = new Float32Array(16 * 5);
         for (let i = 0; i < 5; i++) {
-            const angle = (Math.PI * 2 * i) / 5 + now; // Circular motion
-            const matrix = mat4.create();
+            const angle = (Math.PI * 2 * i) / 5 + now;
+            const ratMatrix = mat4.create();
             const x = Math.cos(angle) * 2.0;
             const z = Math.sin(angle) * 2.0;
-            mat4.translate(matrix, matrix, [x, 0, z]);
-            mat4.rotateY(matrix, matrix, now);
-            mat4.scale(matrix, matrix, [ratRandoms[i], ratRandoms[i], ratRandoms[i]]);
-            ratMatrices.set(matrix, i * 16);
+            mat4.translate(ratMatrix, ratMatrix, [x, 0, z]);
+            mat4.rotateY(ratMatrix, ratMatrix, now);
+            mat4.scale(ratMatrix, ratMatrix, [ratRandoms[i], ratRandoms[i], ratRandoms[i]]);
+            ratMatrices.set(ratMatrix, i * 16);
         }
         rat.updateInstanceMatrices(ratMatrices);
-        rat.renderInstanced(5, viewMatrix);
-
+        rat.renderInstanced(5, vpMatrix);
+    
         requestAnimationFrame(render);
     }
+    
 
     render();
 })();

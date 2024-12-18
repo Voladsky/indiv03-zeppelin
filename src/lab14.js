@@ -1,6 +1,7 @@
 import { createProgram } from "./webgl-utils.js";
 import { parseOBJ, parseOBJWithNormals } from "./obj-loader.js";
 import { mat4 } from "https://cdn.jsdelivr.net/npm/gl-matrix@3.4.3/+esm";
+import { Camera } from "./camera.js"
 
 export class Object3D {
     constructor(gl, program, objData, textureUrl, scale) {
