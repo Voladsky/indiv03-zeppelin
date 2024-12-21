@@ -184,6 +184,7 @@ export class Object3D {
             position: gl.getUniformLocation(this.program, "uPointLight.position"),
             color: gl.getUniformLocation(this.program, "uPointLight.color"),
             intensity: gl.getUniformLocation(this.program, "uPointLight.intensity"),
+            attenuation: gl.getUniformLocation(this.program, "uPointLight.attenuation")
         };
 
         const dirLightLoc = {
@@ -204,6 +205,7 @@ export class Object3D {
         gl.uniform3fv(pointLightLoc.position, [1.0, 2.0, 3.0]);  // Position
         gl.uniform3fv(pointLightLoc.color, [1.0, 0.8, 0.6]);     // Color
         gl.uniform1f(pointLightLoc.intensity, 1.5);              // Intensity
+        gl.uniform3fv(pointLightLoc.attenuation, [0.1, 0.1, 0.1]); // Attenuation
 
         // Set values for Directional Light
         gl.uniform3fv(dirLightLoc.direction, [-0.5, -1.0, -0.5]); // Direction
@@ -335,6 +337,7 @@ function updateBlinkingLight(gl, program, position, color, intensity) {
             position: gl.getUniformLocation(program, "uBlinkingLight.position"),
             color: gl.getUniformLocation(program, "uBlinkingLight.color"),
             intensity: gl.getUniformLocation(program, "uBlinkingLight.intensity"),
+            attenuation: gl.getUniformLocation(program, "uBlinkingLight.attenuation"),
         };
 
         const blinkPosition = position.slice();
@@ -342,6 +345,7 @@ function updateBlinkingLight(gl, program, position, color, intensity) {
         gl.uniform3fv(blinkLightLoc.position, blinkPosition);
         gl.uniform3fv(blinkLightLoc.color, color);
         gl.uniform1f(blinkLightLoc.intensity, intensity);
+        gl.uniform3fv(blinkLightLoc.attenuation, [0.9, 0.9, 1.5]);
 }
 
 
@@ -361,15 +365,18 @@ async function main() {
     layout(location = 3) in mat4 aModelMatrix;
 
     uniform mat4 uViewMatrix, uProjectionMatrix;
+    uniform vec3 uViewPos;
     out vec3 vNormal;
     out vec3 vFragPos;
     out vec2 vTexCoord;
+    out vec3 viewDir;
 
     void main() {
-        vNormal = mat3(transpose(inverse(aModelMatrix))) * aNormal;
+        vNormal = normalize(mat3(transpose(inverse(aModelMatrix))) * aNormal);
         vFragPos = vec3(aModelMatrix * vec4(aPosition, 1.0));
         vTexCoord = aTexCoord;
         gl_Position = uProjectionMatrix * uViewMatrix * aModelMatrix * vec4(aPosition, 1.0);
+        viewDir = normalize(uViewPos - vFragPos);
     }`;
 
 
@@ -379,8 +386,7 @@ async function main() {
     in vec3 vNormal;
     in vec3 vFragPos;
     in vec2 vTexCoord;
-
-    uniform vec3 uViewPos;
+    in vec3 viewDir;
 
     // Light properties
     struct Light {
@@ -388,6 +394,7 @@ async function main() {
         vec3 direction;
         vec3 color;
         float intensity;
+        vec3 attenuation;
         float cutoff; // For spotlights
     };
     uniform Light uPointLight;
@@ -413,20 +420,24 @@ async function main() {
     }
 
     void main() {
-        vec3 normal = normalize(vNormal);
-        vec3 viewDir = normalize(uViewPos - vFragPos);
+        vec3 normal = vNormal;
         vec4 texColor = texture(uTexture, vTexCoord);
 
         vec3 resultColor = vec3(0.0);
 
         // Point Light
         vec3 lightDir = normalize(uPointLight.position - vFragPos);
+        float len = length(lightDir);
         float diff = max(dot(normal, lightDir), 0.0);
-        vec3 pointLightColor = uPointLight.color * diff * uPointLight.intensity;
+        float attenuation = 1.0 / (1.0 + uPointLight.attenuation.x * len + uPointLight.attenuation.y * len * len + uPointLight.attenuation.z * len * len * len);
+        vec3 pointLightColor = uPointLight.color * diff * uPointLight.intensity * attenuation;
 
+        // Blinking Light
         vec3 blinkLightDir = normalize(uBlinkingLight.position - vFragPos);
+        float blinkLen = length(blinkLightDir);
         float diffBlink = max(dot(normal, blinkLightDir), 0.0);
-        vec3 blinkLightColor = uBlinkingLight.color * diffBlink * uBlinkingLight.intensity;
+        float blinkAttenuation = 1.0 / (1.0 + uBlinkingLight.attenuation.x * blinkLen + uBlinkingLight.attenuation.y * blinkLen * blinkLen + uBlinkingLight.attenuation.z * blinkLen * blinkLen * blinkLen );
+        vec3 blinkLightColor = uBlinkingLight.color * diffBlink * uBlinkingLight.intensity * blinkAttenuation;
 
         // Directional Light
         lightDir = normalize(-uDirLight.direction);
@@ -517,7 +528,6 @@ async function main() {
 
         if (blinkIntensity > 0) {
             blinkIntensity = blinkIntensity - deltaTime * maxIntensity;
-            console.log(blinkIntensity);
         }
 
         // Clear the screen
