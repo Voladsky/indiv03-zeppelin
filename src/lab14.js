@@ -307,13 +307,17 @@ const camera = new Camera([0.0, 0.0, 5.0]);
     layout(location = 2) in vec3 aNormal;
 
     uniform mat4 uModelMatrix, uViewMatrix, uProjectionMatrix;
+    uniform vec3 uViewPos;
+
     out vec3 vNormal;
     out vec3 vFragPos;
     out vec2 vTexCoord;
+    out vec3 viewDir;
 
     void main() {
-        vNormal = mat3(transpose(inverse(uModelMatrix))) * aNormal;
+        vNormal = normalize(mat3(transpose(inverse(uModelMatrix))) * aNormal);
         vFragPos = vec3(uModelMatrix * vec4(aPosition, 1.0));
+        viewDir = normalize(uViewPos - vFragPos);
         vTexCoord = aTexCoord;
         gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4(aPosition, 1.0);
     }`;
@@ -325,8 +329,8 @@ const camera = new Camera([0.0, 0.0, 5.0]);
     in vec3 vNormal;
     in vec3 vFragPos;
     in vec2 vTexCoord;
+    in vec3 viewDir;
 
-    uniform vec3 uViewPos;
 
     // Light properties
     struct Light {
@@ -358,27 +362,25 @@ const camera = new Camera([0.0, 0.0, 5.0]);
     }
 
     void main() {
-        vec3 normal = normalize(vNormal);
-        vec3 viewDir = normalize(uViewPos - vFragPos);
         vec4 texColor = texture(uTexture, vTexCoord);
 
         vec3 resultColor = vec3(0.0);
 
         // Point Light
         vec3 lightDir = normalize(uPointLight.position - vFragPos);
-        float diff = max(dot(normal, lightDir), 0.0);
+        float diff = max(dot(vNormal, lightDir), 0.0);
         vec3 pointLightColor = uPointLight.color * diff * uPointLight.intensity;
 
         // Directional Light
         lightDir = normalize(-uDirLight.direction);
-        diff = max(dot(normal, lightDir), 0.0);
+        diff = max(dot(vNormal, lightDir), 0.0);
         vec3 dirLightColor = uDirLight.color * diff * uDirLight.intensity;
 
         // Spotlight
         lightDir = normalize(uSpotLight.position - vFragPos);
         float theta = dot(lightDir, normalize(-uSpotLight.direction));
         if (theta > uSpotLight.cutoff) {
-            diff = max(dot(normal, lightDir), 0.0);
+            diff = max(dot(vNormal, lightDir), 0.0);
             vec3 spotLightColor = uSpotLight.color * diff * uSpotLight.intensity;
             resultColor += spotLightColor;
         }
@@ -387,7 +389,7 @@ const camera = new Camera([0.0, 0.0, 5.0]);
             resultColor += pointLightColor + dirLightColor;
         }
         else if (uShadingMode == 1) {
-            float toon = toonShade(normal, lightDir);
+            float toon = toonShade(vNormal, lightDir);
             resultColor += uPointLight.color * toon * uPointLight.intensity;
         }
         else if (uShadingMode == 2) {
