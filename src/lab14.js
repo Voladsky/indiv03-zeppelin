@@ -191,6 +191,7 @@ export class Object3D {
             position: gl.getUniformLocation(this.program, "uPointLight.position"),
             color: gl.getUniformLocation(this.program, "uPointLight.color"),
             intensity: gl.getUniformLocation(this.program, "uPointLight.intensity"),
+            attenuation: gl.getUniformLocation(this.program, "uPointLight.attenuation")
         };
 
         const dirLightLoc = {
@@ -211,6 +212,7 @@ export class Object3D {
         gl.uniform3fv(pointLightLoc.position, [1.0, 2.0, 3.0]);  // Position
         gl.uniform3fv(pointLightLoc.color, [1.0, 0.8, 0.6]);     // Color
         gl.uniform1f(pointLightLoc.intensity, 1.5);              // Intensity
+        gl.uniform3fv(pointLightLoc.attenuation, [1.0, 0.09, 0.032]); // Attenuation
 
         // Set values for Directional Light
         gl.uniform3fv(dirLightLoc.direction, [-0.5, -1.0, -0.5]); // Direction
@@ -307,13 +309,17 @@ const camera = new Camera([0.0, 0.0, 5.0]);
     layout(location = 2) in vec3 aNormal;
 
     uniform mat4 uModelMatrix, uViewMatrix, uProjectionMatrix;
+    uniform vec3 uViewPos;
+
     out vec3 vNormal;
     out vec3 vFragPos;
     out vec2 vTexCoord;
+    out vec3 viewDir;
 
     void main() {
-        vNormal = mat3(transpose(inverse(uModelMatrix))) * aNormal;
+        vNormal = normalize(mat3(transpose(inverse(uModelMatrix))) * aNormal);
         vFragPos = vec3(uModelMatrix * vec4(aPosition, 1.0));
+        viewDir = normalize(uViewPos - vFragPos);
         vTexCoord = aTexCoord;
         gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4(aPosition, 1.0);
     }`;
@@ -325,14 +331,15 @@ const camera = new Camera([0.0, 0.0, 5.0]);
     in vec3 vNormal;
     in vec3 vFragPos;
     in vec2 vTexCoord;
+    in vec3 viewDir;
 
-    uniform vec3 uViewPos;
 
     // Light properties
     struct Light {
         vec3 position;
         vec3 direction;
         vec3 color;
+        vec3 attenuation; // For point lights
         float intensity;
         float cutoff; // For spotlights
     };
@@ -358,27 +365,27 @@ const camera = new Camera([0.0, 0.0, 5.0]);
     }
 
     void main() {
-        vec3 normal = normalize(vNormal);
-        vec3 viewDir = normalize(uViewPos - vFragPos);
         vec4 texColor = texture(uTexture, vTexCoord);
 
         vec3 resultColor = vec3(0.0);
 
         // Point Light
         vec3 lightDir = normalize(uPointLight.position - vFragPos);
-        float diff = max(dot(normal, lightDir), 0.0);
-        vec3 pointLightColor = uPointLight.color * diff * uPointLight.intensity;
+        float diff = max(dot(vNormal, lightDir), 0.0);
+        float len = length(lightDir);
+        float attenuation = 1.0 / (uPointLight.attenuation[0] + uPointLight.attenuation[1] * len + uPointLight.attenuation[2] * len * len);
+        vec3 pointLightColor = uPointLight.color * diff * uPointLight.intensity * attenuation;
 
         // Directional Light
         lightDir = normalize(-uDirLight.direction);
-        diff = max(dot(normal, lightDir), 0.0);
+        diff = max(dot(vNormal, lightDir), 0.0);
         vec3 dirLightColor = uDirLight.color * diff * uDirLight.intensity;
 
         // Spotlight
         lightDir = normalize(uSpotLight.position - vFragPos);
         float theta = dot(lightDir, normalize(-uSpotLight.direction));
         if (theta > uSpotLight.cutoff) {
-            diff = max(dot(normal, lightDir), 0.0);
+            diff = max(dot(vNormal, lightDir), 0.0);
             vec3 spotLightColor = uSpotLight.color * diff * uSpotLight.intensity;
             resultColor += spotLightColor;
         }
@@ -387,7 +394,7 @@ const camera = new Camera([0.0, 0.0, 5.0]);
             resultColor += pointLightColor + dirLightColor;
         }
         else if (uShadingMode == 1) {
-            float toon = toonShade(normal, lightDir);
+            float toon = toonShade(vNormal, lightDir);
             resultColor += uPointLight.color * toon * uPointLight.intensity;
         }
         else if (uShadingMode == 2) {
@@ -405,12 +412,12 @@ const camera = new Camera([0.0, 0.0, 5.0]);
     const catObjData = await catResponse.text();
     const cat = new Object3D(gl, program, catObjData, "../images/texture.png", 1.5);
 
-    
+
     const kowalskiResponse = await fetch("../models/Kowalski.obj");
     const kowalskiObjData = await kowalskiResponse.text();
     const kowalski = new Object3D(gl, program, kowalskiObjData, "../images/Kowalski.png", 0.2);
 
-    
+
     // Load the mouse model
     const ratResponse = await fetch("../models/rat.obj");
     const ratObjData = await ratResponse.text();
@@ -434,13 +441,13 @@ const camera = new Camera([0.0, 0.0, 5.0]);
         mat4.multiply(vpMatrix, projectionMatrix, viewMatrix);
 
         // cat.render(modelMatrix, viewMatrix, projectionMatrix, 0);
-    
+
         // mat4.translate(modelMatrix, modelMatrix, [0, 0, 10]);
         mat4.rotateY(modelMatrix, modelMatrix, 0.01);
         kowalski.render(modelMatrix, viewMatrix, projectionMatrix, 1);
 
 
-       
+
         // rat.render(model, view, projection, 1);
 
         // mat4.translate(model, model, [0, 0, 1])
