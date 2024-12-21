@@ -191,6 +191,7 @@ export class Object3D {
             position: gl.getUniformLocation(this.program, "uPointLight.position"),
             color: gl.getUniformLocation(this.program, "uPointLight.color"),
             intensity: gl.getUniformLocation(this.program, "uPointLight.intensity"),
+            attenuation: gl.getUniformLocation(this.program, "uPointLight.attenuation")
         };
 
         const dirLightLoc = {
@@ -211,6 +212,7 @@ export class Object3D {
         gl.uniform3fv(pointLightLoc.position, [1.0, 2.0, 3.0]);  // Position
         gl.uniform3fv(pointLightLoc.color, [1.0, 0.8, 0.6]);     // Color
         gl.uniform1f(pointLightLoc.intensity, 1.5);              // Intensity
+        gl.uniform3fv(pointLightLoc.attenuation, [1.0, 0.09, 0.032]); // Attenuation
 
         // Set values for Directional Light
         gl.uniform3fv(dirLightLoc.direction, [-0.5, -1.0, -0.5]); // Direction
@@ -337,6 +339,7 @@ const camera = new Camera([0.0, 0.0, 5.0]);
         vec3 position;
         vec3 direction;
         vec3 color;
+        vec3 attenuation; // For point lights
         float intensity;
         float cutoff; // For spotlights
     };
@@ -369,7 +372,9 @@ const camera = new Camera([0.0, 0.0, 5.0]);
         // Point Light
         vec3 lightDir = normalize(uPointLight.position - vFragPos);
         float diff = max(dot(vNormal, lightDir), 0.0);
-        vec3 pointLightColor = uPointLight.color * diff * uPointLight.intensity;
+        float len = length(lightDir);
+        float attenuation = 1.0 / (uPointLight.attenuation[0] + uPointLight.attenuation[1] * len + uPointLight.attenuation[2] * len * len);
+        vec3 pointLightColor = uPointLight.color * diff * uPointLight.intensity * attenuation;
 
         // Directional Light
         lightDir = normalize(-uDirLight.direction);
@@ -407,12 +412,12 @@ const camera = new Camera([0.0, 0.0, 5.0]);
     const catObjData = await catResponse.text();
     const cat = new Object3D(gl, program, catObjData, "../images/texture.png", 1.5);
 
-    
+
     const kowalskiResponse = await fetch("../models/Kowalski.obj");
     const kowalskiObjData = await kowalskiResponse.text();
     const kowalski = new Object3D(gl, program, kowalskiObjData, "../images/Kowalski.png", 0.2);
 
-    
+
     // Load the mouse model
     const ratResponse = await fetch("../models/rat.obj");
     const ratObjData = await ratResponse.text();
@@ -436,13 +441,13 @@ const camera = new Camera([0.0, 0.0, 5.0]);
         mat4.multiply(vpMatrix, projectionMatrix, viewMatrix);
 
         // cat.render(modelMatrix, viewMatrix, projectionMatrix, 0);
-    
+
         // mat4.translate(modelMatrix, modelMatrix, [0, 0, 10]);
         mat4.rotateY(modelMatrix, modelMatrix, 0.01);
         kowalski.render(modelMatrix, viewMatrix, projectionMatrix, 1);
 
 
-       
+
         // rat.render(model, view, projection, 1);
 
         // mat4.translate(model, model, [0, 0, 1])
