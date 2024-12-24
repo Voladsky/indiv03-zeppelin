@@ -600,17 +600,23 @@ async function main() {
 
     const program = createProgram(gl, vertexShaderSource, fragmentShaderSource);
 
-    const objData = fetch("../models/zeppelin.obj").then((res) => res.text());
-    const martianData = fetch("../models/Martian.obj").then((res) => res.text());
-    const biplaneData = fetch("../models/Biplane.obj").then((res) => res.text());
-    const cloudData = fetch("../models/Cloud.obj").then((res) => res.text());
-    const balloonData = fetch("../models/Balloon.obj").then((res) => res.text());
-    const terrainData = fetch("../models/Plane.obj").then((res) => res.text());
-    const artilleryData = fetch("../models/Artillery.obj").then((res) => res.text());
-
-    await Promise.all([
-        objData, martianData, biplaneData, cloudData, balloonData, terrainData, artilleryData
-    ]);
+    const [
+        objData,
+        martianData,
+        biplaneData,
+        cloudData,
+        balloonData,
+        terrainData,
+        artilleryData
+      ] = await Promise.all([
+        fetch("../models/zeppelin.obj").then((res) => res.text()),
+        fetch("../models/Martian.obj").then((res) => res.text()),
+        fetch("../models/Biplane.obj").then((res) => res.text()),
+        fetch("../models/Cloud.obj").then((res) => res.text()),
+        fetch("../models/Balloon.obj").then((res) => res.text()),
+        fetch("../models/Plane.obj").then((res) => res.text()),
+        fetch("../models/Artillery.obj").then((res) => res.text())
+      ]);
 
     const textureUrl = "../images/Zeppelin.png";
 
