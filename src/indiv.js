@@ -616,29 +616,29 @@ async function main() {
         }
     }
 
-    const martianData = await fetch("../models/Martian.obj").then((res) => res.text());
+    const martianData = fetch("../models/Martian.obj").then((res) => res.text());
     const martianTexture = "../images/Martian.png";
     const martianObject = new Object3D(gl, program, martianData, martianTexture, 0.1);
 
-    const biplaneData = await fetch("../models/Biplane.obj").then((res) => res.text());
+    const biplaneData = fetch("../models/Biplane.obj").then((res) => res.text());
     const biplaneTexture = "../models/Biplane.png";
     const biplaneObject = new Object3D(gl, program, biplaneData, biplaneTexture, 0.08); // Orbit center, radius, speed
 
-    const cloudData = await fetch("../models/Cloud.obj").then((res) => res.text());
+    const cloudData = fetch("../models/Cloud.obj").then((res) => res.text());
     const cloudTexture = "../images/Cloud.png";
     const cloudObject = new Object3D(gl, program, cloudData, cloudTexture, 0.002);
 
-    const balloonData = await fetch("../models/Balloon.obj").then((res) => res.text());
+    const balloonData = fetch("../models/Balloon.obj").then((res) => res.text());
     const balloonTexture = "../images/Balloon.png";
     const balloonObject = new Object3D(gl, program, balloonData, balloonTexture, 0.1);
 
 
-    const terrainData = await fetch("../models/Plane.obj").then((res) => res.text());
+    const terrainData = fetch("../models/Plane.obj").then((res) => res.text());
     const terrainTexture = "../images/terrain.png";
     const heightMap = "../images/heightmap2.png";
     const terrainObject = new Object3D(gl, program, terrainData, terrainTexture, 5);
 
-    const artilleryData = await fetch("../models/Artillery.obj").then((res) => res.text());
+    const artilleryData = fetch("../models/Artillery.obj").then((res) => res.text());
     const artilleryTexture = "../images/Artillery.jpg";
     const artilleryObject = new Object3D(gl, program, artilleryData, artilleryTexture, 0.2);
 
