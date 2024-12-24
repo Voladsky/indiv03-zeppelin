@@ -7,6 +7,10 @@ let loading_music = new Audio("../audio/loading1.ogg");
 let loading2 = new Audio("../audio/loading2.ogg");
 const stampSound = new Audio("../audio/stamp.mp3");
 
+await Promise.all([
+    typesound, loading_music, loading2, stampSound
+]);
+
 function imitateTypewriterEffect(text, element, speed) {
     let i = 0;
     let lastTime = 0; // Variable to store the last time update occurred
