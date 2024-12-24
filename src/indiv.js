@@ -41,7 +41,7 @@ function imitateTypewriterEffect(text, element, speed) {
             requestAnimationFrame(updateText);
         } else {
             document.getElementById("quote").style.display = "block";
-            setTimeout(() => {document.getElementsByClassName('loader').style.display = "block"; }, 200);
+            setTimeout(() => {document.getElementById('loaderAnim').style.display = "block"; }, 200);
             stampSound.volume = 0.3;
             stampSound.play();
             element.innerHTML += "";
