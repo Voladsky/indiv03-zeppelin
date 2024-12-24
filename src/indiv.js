@@ -12,53 +12,58 @@ await Promise.all([
 ]);
 
 async function imitateTypewriterEffect(text, element, speed) {
-    let i = 0;
-    let lastTime = 0; // Variable to store the last time update occurred
-    typesound.loop = true;
-    typesound.volume = 0.20;
-    typesound.playbackRate = 1.5;
-    typesound.play();
+    return new Promise((resolve) => {
+        let i = 0;
+        let lastTime = 0; // Variable to store the last time update occurred
+        typesound.loop = true;
+        typesound.volume = 0.20;
+        typesound.playbackRate = 1.5;
+        typesound.play();
 
-    loading_music.loop = true;
-    loading_music.volume = 0.1;
-    loading_music.play();
+        loading_music.loop = true;
+        loading_music.volume = 0.1;
+        loading_music.play();
 
-    loading2.loop = true;
-    loading2.volume = 0.1;
+        loading2.loop = true;
+        loading2.volume = 0.1;
 
-    function updateText(currentTime) {
-        const deltaTime = currentTime - lastTime;
+        function updateText(currentTime) {
+            const deltaTime = currentTime - lastTime;
 
-        if (deltaTime >= speed) {
-            if (i < text.length) {
-                element.textContent += text[i];
-                i++;
+            if (deltaTime >= speed) {
+                if (i < text.length) {
+                    element.textContent += text[i];
+                    i++;
+                }
+                lastTime = currentTime;
             }
-            lastTime = currentTime;
+
+            if (i < text.length) {
+                requestAnimationFrame(updateText);
+            } else {
+                document.getElementById("quote").style.display = "block";
+                document.getElementById('loaderAnim').style.display = "block";
+                stampSound.volume = 0.3;
+                stampSound.play();
+                element.innerHTML += "";
+                typesound.pause();
+                loading_music.loop = false;
+                loading_music.addEventListener("ended", function () {
+                    loading_music = loading2;
+                    loading_music.play();
+                });
+
+                // Resolve the promise after the text has been completely typed
+                resolve();
+            }
         }
 
-        if (i < text.length) {
-            requestAnimationFrame(updateText);
-        } else {
-            document.getElementById("quote").style.display = "block";
-            setTimeout(() => {document.getElementById('loaderAnim').style.display = "block"; }, 200);
-            stampSound.volume = 0.3;
-            stampSound.play();
-            element.innerHTML += "";
-            typesound.pause();
-            loading_music.loop = false;
-            loading_music.addEventListener("ended", function () {
-                loading_music = loading2;
-                loading_music.play();
-            });
-        }
-    }
-
-    requestAnimationFrame(updateText);
+        requestAnimationFrame(updateText);
+    });
 }
 
-const typingSpeed = 50;
-imitateTypewriterEffect("Никто не поверил бы в последние годы девятнадцатого  столетия,  что  за всем происходящим на Земле  зорко  и  внимательно  следят  существа  более развитые, чем человек, хотя такие же смертные, как и он; что в  то  время, как люди занимались своими делами, их исследовали и изучали,  может  быть, так же тщательно,  как  человек  в  микроскоп  изучает  эфемерных  тварей, кишащих и размножающихся  в  капле  воды.", document.getElementById("typewriter"), typingSpeed);
+const typingSpeed = 1;
+const typeWriter = imitateTypewriterEffect("Никто не поверил бы в последние годы девятнадцатого  столетия,  что  за всем происходящим на Земле  зорко  и  внимательно  следят  существа  более развитые, чем человек, хотя такие же смертные, как и он; что в  то  время, как люди занимались своими делами, их исследовали и изучали,  может  быть, так же тщательно,  как  человек  в  микроскоп  изучает  эфемерных  тварей, кишащих и размножающихся  в  капле  воды.", document.getElementById("typewriter"), typingSpeed);
 
 
 const artilleryShout = new Audio("../audio/artillery4.mp3");
@@ -692,7 +697,7 @@ async function main() {
     gl.enable(gl.DEPTH_TEST);
 
     await Promise.all([
-        zeppelin, martianObject, biplaneObject, cloudObject, terrainObject, balloonObject, artilleryObject
+        zeppelin, martianObject, biplaneObject, cloudObject, terrainObject, balloonObject, artilleryObject, typeWriter
     ]);
 
     document.getElementById('loaderAnim').style.display = "none";

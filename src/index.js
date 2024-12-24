@@ -15,11 +15,12 @@ document.getElementById("indivLink").addEventListener("click", function(e) {
     }, 1000);
 
     const lst = document.querySelectorAll('a');
+    console.log(lst);
 
     setTimeout(function() {
         let i = 0;
         const id = setInterval(() => {
-            if (i > lst.length) {
+            if (i === lst.length) {
                 clearInterval(id);
             }
             lst[i].style.fontFamily = "'Courier New', Courier, monospace";
