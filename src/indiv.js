@@ -2,7 +2,7 @@ import { createProgram } from "./webgl-utils.js";
 import { parseOBJWithNormals } from "./obj-loader.js";
 import { mat4, vec3, glMatrix } from "https://cdn.jsdelivr.net/npm/gl-matrix@3.4.3/+esm";
 
-let typesound = new Audio("../audio/typewriter.mp3");
+const typesound = new Audio("../audio/typewriter.mp3");
 let loading_music = new Audio("../audio/loading1.ogg");
 let loading2 = new Audio("../audio/loading2.ogg");
 const stampSound = new Audio("../audio/stamp.mp3");
@@ -59,12 +59,13 @@ const typingSpeed = 50;
 imitateTypewriterEffect("Никто не поверил бы в последние годы девятнадцатого  столетия,  что  за всем происходящим на Земле  зорко  и  внимательно  следят  существа  более развитые, чем человек, хотя такие же смертные, как и он; что в  то  время, как люди занимались своими делами, их исследовали и изучали,  может  быть, так же тщательно,  как  человек  в  микроскоп  изучает  эфемерных  тварей, кишащих и размножающихся  в  капле  воды.", document.getElementById("typewriter"), typingSpeed);
 
 
-
 const artilleryShout = new Audio("../audio/artillery4.mp3");
 const artilleryBLAST = new Audio("../audio/blast2.mp3");
 const soundtrack = new Audio('../audio/music.ogg');
 const biplaneSound = new Audio("../audio/plane.mp3");
 const ambient = new Audio("../audio/ambient1.mp3");
+const light_sound_off = new Audio("../audio/flashlight_off.wav");
+const light_sound_on = new Audio("../audio/flashlight_on.wav");
 
 // Define sound effects
 const otherSounds = [
@@ -839,20 +840,17 @@ async function main() {
         // Start playing random sounds
         startRandomSoundEffects();
 
-
         // Handle keyboard inputs
         window.addEventListener("keydown", (e) => {
             keys[e.code] = true;
             if (e.code === "KeyL") {
                 if (zeppelin.spotlight_on) {
-                    let light_sound = new Audio("../audio/flashlight_off.wav");
-                    light_sound.volume = 0.8;
-                    light_sound.play();
+                    light_sound_off.volume = 0.8;
+                    light_sound_off.play();
                 }
                 else {
-                    let light_sound = new Audio("../audio/flashlight_on.wav");
-                    light_sound.volume = 0.8;
-                    light_sound.play();
+                    light_sound_on.volume = 0.8;
+                    light_sound_on.play();
                 }
                 zeppelin.spotlight_on = !zeppelin.spotlight_on;
                 zeppelin.camera_transitioning = true;
