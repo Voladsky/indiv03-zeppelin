@@ -333,7 +333,6 @@ const camera = new Camera([0.0, 0.0, 5.0]);
     in vec2 vTexCoord;
     in vec3 viewDir;
 
-
     // Light properties
     struct Light {
         vec3 position;
@@ -368,6 +367,7 @@ const camera = new Camera([0.0, 0.0, 5.0]);
         vec4 texColor = texture(uTexture, vTexCoord);
 
         vec3 resultColor = vec3(0.0);
+        vec3 ambientColor = vec3(0.1); // A simple ambient light component
 
         // Point Light
         vec3 lightDir = normalize(uPointLight.position - vFragPos);
@@ -384,21 +384,27 @@ const camera = new Camera([0.0, 0.0, 5.0]);
         // Spotlight
         lightDir = normalize(uSpotLight.position - vFragPos);
         float theta = dot(lightDir, normalize(-uSpotLight.direction));
+        vec3 spotLightColor = vec3(0.0);
         if (theta > uSpotLight.cutoff) {
             diff = max(dot(vNormal, lightDir), 0.0);
-            vec3 spotLightColor = uSpotLight.color * diff * uSpotLight.intensity;
-            resultColor += spotLightColor;
+            spotLightColor = uSpotLight.color * diff * uSpotLight.intensity;
         }
 
+        // Phong Shading - Specular component
+        vec3 reflectDir = reflect(-lightDir, vNormal);
+        float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);  // 32.0 is the shininess coefficient
+        vec3 specularColor = uPointLight.color * spec * uPointLight.intensity;
+
+        // Result Color Composition
         if (uShadingMode == 0) {
-            resultColor += pointLightColor + dirLightColor;
+            resultColor = ambientColor + pointLightColor + dirLightColor + spotLightColor + specularColor;
         }
         else if (uShadingMode == 1) {
             float toon = toonShade(vNormal, lightDir);
             resultColor += uPointLight.color * toon * uPointLight.intensity;
         }
         else if (uShadingMode == 2) {
-            resultColor += pointLightColor * 0.5 + dirLightColor * 0.5;
+            resultColor += (pointLightColor * 0.5 + dirLightColor * 0.5);
         }
 
         FragColor = vec4(resultColor * texColor.rgb, texColor.a);

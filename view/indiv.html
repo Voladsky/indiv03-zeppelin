@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="./styles/styles.css" />
+    <link rel="stylesheet" href="./styles/indiv.css" />
     <title>WebGL Lighting</title>
     <style>
         canvas {
@@ -15,9 +16,18 @@
     </style>
 </head>
 <body>
-    <a id="back" href="../index.html">
+    <!-- <a id="back" href="../index.html">
         <img src="../images/back.gif">
-    </a>
+    </a> -->
+
+
+    <div id="loadingScreen">
+        <div class="typeWriterText" id="typewriter"></div>
+        <div class="typeWriterText" id="quote">(c) Герберт Уэллс, "Война миров"</div>
+        <div class="subtitles" id="subtitles"></div>
+        <button id="startButton">На заре двадцатого века наши иллюзии были разрушены.</button>
+    </div>
+
     <canvas id="gl-canvas"></canvas>
     <script type="module" src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"></script>
     <script type="module" src="../src/webgl-utils.js"></script>

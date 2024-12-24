@@ -5,7 +5,7 @@ import { mat4, vec3, glMatrix } from "https://cdn.jsdelivr.net/npm/gl-matrix@3.4
 const distanceScale = 0;
 
 class Camera {
-    constructor(target = [0.0, 0.0, 0.0], distance = 4.0, up = [0.0, 1.0, 0.0], yaw = -90.0, pitch = 15.0) {
+    constructor(target = [0.0, 0.0, 0.0], distance = 4.0, up = [0.0, 1.0, 0.0], yaw = -45.0, pitch = -15.0) {
         this.target = vec3.clone(target);
         this.distance = distance;
         this.position = vec3.create();
@@ -87,6 +87,7 @@ class Camera {
 
 export class Object3D {
     constructor(gl, program, objData, textureUrl, scale) {
+        /** @type {WebGL2RenderingContext} */
         this.gl = gl;
         this.program = program;
 
@@ -132,6 +133,8 @@ export class Object3D {
             gl.vertexAttribDivisor(3 + i, 1); // One matrix per instance
         }
 
+        this.displacementMap = gl.NULL;
+
         gl.bindVertexArray(null);
 
         // Load texture
@@ -139,10 +142,13 @@ export class Object3D {
         const image = new Image();
         image.src = textureUrl;
         image.onload = () => {
+            gl.activeTexture(gl.TEXTURE0);
             gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
             gl.bindTexture(gl.TEXTURE_2D, this.texture);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
             gl.generateMipmap(gl.TEXTURE_2D);
+            gl.useProgram(this.program);
+            gl.uniform1i(gl.getUniformLocation(program, "uTexture"), 0);
         };
     }
 
@@ -151,23 +157,6 @@ export class Object3D {
         gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceMatrixBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, matrices, gl.DYNAMIC_DRAW);
     }
-
-    renderInstanced(instanceCount, viewMatrix) {
-        const gl = this.gl;
-
-        gl.useProgram(this.program);
-
-        // Set the uniform matrix explicitly
-        gl.uniformMatrix4fv(gl.getUniformLocation(this.program, "uMatrix"), false, viewMatrix);
-
-        gl.bindVertexArray(this.vao);
-        gl.bindTexture(gl.TEXTURE_2D, this.texture);
-        gl.drawArraysInstanced(gl.TRIANGLES, 0, this.vertexCount, instanceCount);
-
-        gl.bindVertexArray(null);
-    }
-
-
 
     render(models, view, projection, shadingMode, numInstances = 1) {
         /** @type {WebGL2RenderingContext} */
@@ -193,14 +182,6 @@ export class Object3D {
             intensity: gl.getUniformLocation(this.program, "uDirLight.intensity"),
         };
 
-        // const spotLightLoc = {
-        //     position: gl.getUniformLocation(this.program, "uSpotLight.position"),
-        //     direction: gl.getUniformLocation(this.program, "uSpotLight.direction"),
-        //     color: gl.getUniformLocation(this.program, "uSpotLight.color"),
-        //     intensity: gl.getUniformLocation(this.program, "uSpotLight.intensity"),
-        //     cutoff: gl.getUniformLocation(this.program, "uSpotLight.cutoff"),
-        // };
-
         // Set values for Point Light
         gl.uniform3fv(pointLightLoc.position, [1.0, 2.0, 3.0]);  // Position
         gl.uniform3fv(pointLightLoc.color, [1.0, 0.8, 0.6]);     // Color
@@ -212,19 +193,19 @@ export class Object3D {
         gl.uniform3fv(dirLightLoc.color, [1.0, 1.0, 1.0]);        // Color
         gl.uniform1f(dirLightLoc.intensity, 0.8);                 // Intensity
 
-        // Set values for Spotlight
-        // gl.uniform3fv(spotLightLoc.position, [2.0, 4.0, 2.0]);    // Position
-        // gl.uniform3fv(spotLightLoc.direction, [-1.0, -1.0, -1.0]);// Direction
-        // gl.uniform3fv(spotLightLoc.color, [1.0, 0.5, 0.2]);       // Color
-        // gl.uniform1f(spotLightLoc.intensity, 2.0);                // Intensity
-        // gl.uniform1f(spotLightLoc.cutoff, Math.cos(Math.PI / 6)); // Spotlight cutoff (30 degrees)
-
         gl.uniform1i(gl.getUniformLocation(this.program, "uShadingMode"), shadingMode);
+        gl.uniform1f(gl.getUniformLocation(this.program, "uShininess"), 32.0);
 
         gl.uniform3fv(gl.getUniformLocation(this.program, "uViewPos"), camera.position);
 
         gl.bindVertexArray(this.vao);
+
+        gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, this.texture);
+
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, this.displacementMap);
+
         gl.drawArraysInstanced(gl.TRIANGLES, 0, this.vertexCount, numInstances);
 
         gl.bindVertexArray(null);
@@ -242,23 +223,28 @@ class Zeppelin {
         this.position = vec3.fromValues(0, 0, 0);
         this.rotation = vec3.fromValues(0, 0, 0); // [pitch, yaw, roll]
         this.camera_forward = vec3.create();
-        this.spotlight_on = true;
+        this.spotlight_on = false;
         this.camera_transitioning = false;
+        this.propeller = new Audio("../audio/propeller.mp3");
+        this.propeller.loop = true;
+        this.propeller.volume = 0.0;
+        this.propeller.play();
     }
 
     update(deltaTime, camera) {
         const moveSpeed = 1.5;
         const rotateSpeed = 0.7;
 
-        if (keys["w"]) vec3.scaleAndAdd(this.position, this.position, [camera.front[0], 0, camera.front[2]], moveSpeed * deltaTime);
-        if (keys["s"]) vec3.scaleAndAdd(this.position, this.position, [camera.front[0], 0, camera.front[2]], -moveSpeed * deltaTime);
-        if (keys["a"]) vec3.scaleAndAdd(this.position, this.position, [camera.right[0], 0, camera.right[2]], -moveSpeed * deltaTime);
-        if (keys["d"]) vec3.scaleAndAdd(this.position, this.position, [camera.right[0], 0, camera.right[2]], moveSpeed * deltaTime);
-        if (keys["q"]) vec3.scaleAndAdd(this.position, this.position, [0, camera.up[1], 0], moveSpeed * deltaTime);
-        if (keys["e"]) vec3.scaleAndAdd(this.position, this.position, [0, camera.up[1], 0], -moveSpeed * deltaTime);
+        if (keys["KeyW"]) vec3.scaleAndAdd(this.position, this.position, [camera.front[0], 0, camera.front[2]], moveSpeed * deltaTime);
+        if (keys["KeyS"]) vec3.scaleAndAdd(this.position, this.position, [camera.front[0], 0, camera.front[2]], -moveSpeed * deltaTime);
+        if (keys["KeyA"]) vec3.scaleAndAdd(this.position, this.position, [camera.right[0], 0, camera.right[2]], -moveSpeed * deltaTime);
+        if (keys["KeyD"]) vec3.scaleAndAdd(this.position, this.position, [camera.right[0], 0, camera.right[2]], moveSpeed * deltaTime);
+        if (keys["KeyE"]) vec3.scaleAndAdd(this.position, this.position, [0, camera.up[1], 0], moveSpeed * deltaTime);
+        if (keys["KeyQ"]) vec3.scaleAndAdd(this.position, this.position, [0, camera.up[1], 0], -moveSpeed * deltaTime);
         this.camera_forward = camera.front;
 
-        if (keys["w"] || keys["s"] || keys["a"] || keys["d"] || keys["q"] || keys["e"]) {
+        if (keys["KeyW"] || keys["KeyS"] || keys["KeyA"] || keys["KeyD"] || keys["KeyE"] || keys["KeyQ"]) {
+            this.propeller.volume = 0.4;
             const forward = vec3.fromValues(camera.front[0], 0, camera.front[2]);
             vec3.normalize(forward, forward);
 
@@ -270,6 +256,9 @@ class Zeppelin {
 
             if (Math.abs(deltaYaw) >= 1e-2)
                 this.rotation[1] += deltaYaw * deltaTime * rotateSpeed;
+        }
+        else {
+            this.propeller.volume = 0.0;
         }
 
         const target = vec3.create();
@@ -298,13 +287,13 @@ class Zeppelin {
     }
 
     updateSpotlight(gl, program) {
+        gl.useProgram(program);
         const spotLightLoc = {
             position: gl.getUniformLocation(program, "uSpotLight.position"),
             direction: gl.getUniformLocation(program, "uSpotLight.direction"),
             color: gl.getUniformLocation(program, "uSpotLight.color"),
             intensity: gl.getUniformLocation(program, "uSpotLight.intensity"),
-            cutoff: gl.getUniformLocation(program, "uSpotLight.cutoff"),
-            on: gl.getUniformLocation(program, "uSpotlightOn"),
+            cutoff: gl.getUniformLocation(program, "uSpotLight.cutoff")
         };
 
         // Spotlight position is at the Zeppelin's current position
@@ -333,24 +322,105 @@ class Zeppelin {
 }
 
 function updateBlinkingLight(gl, program, position, color, intensity) {
-        const blinkLightLoc = {
-            position: gl.getUniformLocation(program, "uBlinkingLight.position"),
-            color: gl.getUniformLocation(program, "uBlinkingLight.color"),
-            intensity: gl.getUniformLocation(program, "uBlinkingLight.intensity"),
-            attenuation: gl.getUniformLocation(program, "uBlinkingLight.attenuation"),
-        };
+    const blinkLightLoc = {
+        position: gl.getUniformLocation(program, "uBlinkingLight.position"),
+        color: gl.getUniformLocation(program, "uBlinkingLight.color"),
+        intensity: gl.getUniformLocation(program, "uBlinkingLight.intensity"),
+        attenuation: gl.getUniformLocation(program, "uBlinkingLight.attenuation"),
+    };
 
-        const blinkPosition = position.slice();
+    const blinkPosition = position.slice();
 
-        gl.uniform3fv(blinkLightLoc.position, blinkPosition);
-        gl.uniform3fv(blinkLightLoc.color, color);
-        gl.uniform1f(blinkLightLoc.intensity, intensity);
-        gl.uniform3fv(blinkLightLoc.attenuation, [0.9, 0.9, 1.5]);
+    gl.uniform3fv(blinkLightLoc.position, blinkPosition);
+    gl.uniform3fv(blinkLightLoc.color, color);
+    gl.uniform1f(blinkLightLoc.intensity, intensity);
+    gl.uniform3fv(blinkLightLoc.attenuation, [5, 5, 5]);
 }
 
+function applyDisplacementMap(gl, program, heightMap, object) {
+    const displacementMap = gl.createTexture();
+    const image = new Image();
+    image.src = heightMap;
+
+    image.onload = () => {
+        gl.activeTexture(gl.TEXTURE1); // Activate texture unit 1
+        gl.bindTexture(gl.TEXTURE_2D, displacementMap);
+
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.generateMipmap(gl.TEXTURE_2D);
+
+        const uDisplacementMapLocation = gl.getUniformLocation(program, "uDisplacementMap");
+        gl.useProgram(program);
+        gl.uniform1i(uDisplacementMapLocation, 1); // Bind to texture unit 1
+
+
+        object.displacementMap = displacementMap;
+    };
+}
+
+let loading_music = null;
+
+function imitateTypewriterEffect(text, element, speed) {
+    let i = 0;
+    let lastTime = 0; // Variable to store the last time update occurred
+    let typesound = new Audio("../audio/typewriter.mp3");
+    typesound.loop = true;
+    typesound.volume = 0.20;
+    typesound.playbackRate = 1.5;
+    typesound.play();
+
+    loading_music = new Audio("../audio/loading1.ogg");
+    loading_music.loop = true;
+    loading_music.volume = 0.1;
+    loading_music.play();
+
+    let loading2 = new Audio("../audio/loading2.ogg");
+    loading2.loop = true;
+    loading2.volume = 0.1;
+
+    function updateText(currentTime) {
+        const deltaTime = currentTime - lastTime;
+
+        if (deltaTime >= speed) {
+            if (i < text.length) {
+                element.textContent += text[i];
+                i++;
+            }
+            lastTime = currentTime;
+        }
+
+        if (i < text.length) {
+            requestAnimationFrame(updateText);
+        } else {
+            const stampSound = new Audio("../audio/stamp.mp3");
+            document.getElementById("quote").style.display = "block";
+            stampSound.volume = 0.3;
+            stampSound.play();
+            element.innerHTML += "";
+            const startButton = document.getElementById("startButton");
+            startButton.style.display = "block";
+            typesound.pause();
+            loading_music.loop = false;
+            loading_music.addEventListener("ended", function () {
+                loading_music = loading2;
+                loading_music.play();
+            });
+        }
+    }
+
+    requestAnimationFrame(updateText);
+}
 
 async function main() {
     const canvas = document.getElementById("gl-canvas");
+    const startButton = document.getElementById("startButton");
+    const loadingScreen = document.getElementById("loadingScreen");
+
     /** @type {WebGL2RenderingContext} */
     const gl = canvas.getContext("webgl2");
     if (!gl) {
@@ -366,16 +436,23 @@ async function main() {
 
     uniform mat4 uViewMatrix, uProjectionMatrix;
     uniform vec3 uViewPos;
+
+    uniform sampler2D uDisplacementMap; // Displacement map
+
     out vec3 vNormal;
     out vec3 vFragPos;
     out vec2 vTexCoord;
     out vec3 viewDir;
 
     void main() {
+        float displacementScale = 20.0;
+        float displacement = texture(uDisplacementMap, aTexCoord).r * displacementScale;
+        vec3 displacedPosition = aPosition + vec3(0, displacement, 0);
+
         vNormal = normalize(mat3(transpose(inverse(aModelMatrix))) * aNormal);
-        vFragPos = vec3(aModelMatrix * vec4(aPosition, 1.0));
+        vFragPos = vec3(aModelMatrix * vec4(displacedPosition, 1.0));
         vTexCoord = aTexCoord;
-        gl_Position = uProjectionMatrix * uViewMatrix * aModelMatrix * vec4(aPosition, 1.0);
+        gl_Position = uProjectionMatrix * uViewMatrix * aModelMatrix * vec4(displacedPosition, 1.0);
         viewDir = normalize(uViewPos - vFragPos);
     }`;
 
@@ -397,13 +474,13 @@ async function main() {
         vec3 attenuation;
         float cutoff; // For spotlights
     };
+
     uniform Light uPointLight;
     uniform Light uDirLight;
     uniform Light uSpotLight;
     uniform Light uBlinkingLight;
-
-    // Texture samplers
     uniform sampler2D uTexture;
+    uniform float uShininess;
 
     // Shading mode
     uniform int uShadingMode;
@@ -411,12 +488,42 @@ async function main() {
     // Outputs
     out vec4 FragColor;
 
+    // Dithering parameters
+    float dither(vec2 coord, float intensity) {
+        // Bayer matrix dithering
+        int[4] bayer = int[4](0, 2, 3, 1);
+        float threshold = float(bayer[int(mod(coord.x, 2.0) + 2.0 * mod(coord.y, 2.0))]) / 4.0;
+        return intensity > threshold ? 1.0 : 0.0;
+    }
+
+    vec3 phongShading(vec3 lightDir, vec3 normal, vec3 lightColor, float intensity, float attenuation) {
+        vec3 ambient = 0.1 * lightColor;
+
+        float NdotL = max(dot(normal, lightDir), 0.0);
+        vec3 diffuse = lightColor * NdotL * intensity;
+
+        vec3 reflectDir = reflect(-lightDir, normal);
+        float spec = pow(max(dot(viewDir, reflectDir), 0.0), uShininess);
+        vec3 specular = lightColor * spec * intensity;
+
+        return ambient + diffuse * attenuation + specular * attenuation;
+    }
+
     float toonShade(vec3 normal, vec3 lightDir) {
         float intensity = max(dot(normal, lightDir), 0.0);
         if (intensity > 0.9) return 1.0;
         else if (intensity > 0.5) return 0.7;
         else if (intensity > 0.25) return 0.4;
         else return 0.2;
+    }
+
+    vec3 spotlightEffect(vec3 lightDir, vec3 normal, vec3 lightColor, float intensity, float cutoff) {
+        float theta = dot(lightDir, normalize(-uSpotLight.direction));
+        if (theta > cutoff) {
+            float diff = max(dot(normal, lightDir), 0.0);
+            return lightColor * diff * intensity;
+        }
+        return vec3(0.0);
     }
 
     void main() {
@@ -440,40 +547,39 @@ async function main() {
         vec3 blinkLightColor = uBlinkingLight.color * diffBlink * uBlinkingLight.intensity * blinkAttenuation;
 
         // Directional Light
-        lightDir = normalize(-uDirLight.direction);
-        diff = max(dot(normal, lightDir), 0.0);
+        vec3 dirLightDir = normalize(-uDirLight.direction);
+        diff = max(dot(normal, dirLightDir), 0.0);
         vec3 dirLightColor = uDirLight.color * diff * uDirLight.intensity;
 
-        // Spotlight
-        lightDir = normalize(uSpotLight.position - vFragPos);
-        float theta = dot(lightDir, normalize(-uSpotLight.direction));
-        if (theta > uSpotLight.cutoff) {
-            diff = max(dot(normal, lightDir), 0.0);
-            vec3 spotLightColor = uSpotLight.color * diff * uSpotLight.intensity;
-            resultColor += spotLightColor;
-        }
+        vec3 spotLightDir = normalize(uSpotLight.position - vFragPos);
 
         if (uShadingMode == 0) {
-            resultColor += pointLightColor + dirLightColor + blinkLightColor;
+            resultColor += phongShading(lightDir, normal, uPointLight.color, uPointLight.intensity, attenuation);
+            resultColor += phongShading(blinkLightDir, normal, uBlinkingLight.color, uBlinkingLight.intensity, blinkAttenuation);
+            resultColor += phongShading(dirLightDir, normal, uDirLight.color, uDirLight.intensity, 1.0);
+            vec3 spotlightColor = spotlightEffect(spotLightDir, normal, uSpotLight.color, uSpotLight.intensity, uSpotLight.cutoff);
+            resultColor += spotlightColor;
         }
         else if (uShadingMode == 1) {
             float toon = toonShade(normal, lightDir);
             resultColor += uPointLight.color * toon * uPointLight.intensity;
         }
-        else if (uShadingMode == 2) {
-            resultColor += pointLightColor * 0.5 + dirLightColor * 0.5 + blinkLightColor * 0.5;
-        }
+
+        vec2 screenCoord = gl_FragCoord.xy;
+        resultColor *= dither(screenCoord, 0.5);
 
         FragColor = vec4(resultColor * texColor.rgb, texColor.a);
     }`;
 
     const program = createProgram(gl, vertexShaderSource, fragmentShaderSource);
     const objData = await fetch("../models/zeppelin.obj").then((res) => res.text());
-    const textureUrl = "../models/zeppelin.png";
+    const textureUrl = "../images/Zeppelin.png";
 
     const zeppelin = new Zeppelin(gl, program, objData, textureUrl);
+    zeppelin.position = [-5, 0, 5];
 
     function resizeCanvasToDisplaySize(canvas) {
+        canvas.style.display = "block";
         const displayWidth = canvas.clientWidth * window.devicePixelRatio;
         const displayHeight = canvas.clientHeight * window.devicePixelRatio;
         if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
@@ -484,21 +590,36 @@ async function main() {
     }
 
     const martianData = await fetch("../models/Martian.obj").then((res) => res.text());
-    const martianTexture = "../models/Martian.png";
+    const martianTexture = "../images/Martian.png";
     const martianObject = new Object3D(gl, program, martianData, martianTexture, 0.1);
 
     const biplaneData = await fetch("../models/Biplane.obj").then((res) => res.text());
     const biplaneTexture = "../models/Biplane.png";
     const biplaneObject = new Object3D(gl, program, biplaneData, biplaneTexture, 0.08); // Orbit center, radius, speed
 
-    const cloudData = await fetch("../models/Kowalski.obj").then((res) => res.text());
-    const cloudTexture = "../images/Kowalski.png";
-    const cloudObject = new Object3D(gl, program, cloudData, cloudTexture, 0.1);
+    const cloudData = await fetch("../models/Cloud.obj").then((res) => res.text());
+    const cloudTexture = "../images/Cloud.png";
+    const cloudObject = new Object3D(gl, program, cloudData, cloudTexture, 0.002);
+
+    const balloonData = await fetch("../models/Balloon.obj").then((res) => res.text());
+    const balloonTexture = "../images/Balloon.png";
+    const balloonObject = new Object3D(gl, program, balloonData, balloonTexture, 0.1);
+
+
+    const terrainData = await fetch("../models/Plane.obj").then((res) => res.text());
+    const terrainTexture = "../images/terrain.png";
+    const heightMap = "../images/heightmap2.png";
+    const terrainObject = new Object3D(gl, program, terrainData, terrainTexture, 5);
+
+    const artilleryData = await fetch("../models/Artillery.obj").then((res) => res.text());
+    const artilleryTexture = "../images/Artillery.jpg";
+    const artilleryObject = new Object3D(gl, program, artilleryData, artilleryTexture, 0.2);
+
 
     const biplanesSpeeds = [];
-    const numBiplanes = 5;
-    const orbitCenter = [0, 0, 0];
-    const orbitRadius = 3.5;
+    const numBiplanes = 8;
+    let orbitCenter = [0, 0, 0];
+    let orbitRadius = 3.5;
     const orbitSpeed = 0.3;
     for (var i = 0; i < numBiplanes; i++) {
         biplanesSpeeds.push(Math.random());
@@ -515,162 +636,266 @@ async function main() {
         cloudMatrices.set(cloudMatrix, i * 16);
     }
 
-    const maxIntensity = 10.0;
+    const numBalloons = 10;
+    const balloonMatrices = new Float32Array(16 * numBalloons);
+    for (var i = 0; i < numBalloons; i++) {
+        const balloonMatrix = mat4.create();
+        mat4.translate(balloonMatrix, balloonMatrix, [Math.random() * 30 - 15, -Math.random() * 4 + 4, Math.random() * 30 - 15]);
+        mat4.rotateY(balloonMatrix, balloonMatrix, Math.random());
+        balloonMatrices.set(balloonMatrix, i * 16);
+    }
+
+    const maxIntensity = 50.0;
     var blinkIntensity = 0.0;
 
 
     gl.clearColor(0.1, 0.1, 0.1, 1.0);
     gl.enable(gl.DEPTH_TEST);
-    async function render(time) {
-        resizeCanvasToDisplaySize(canvas);
-        const deltaTime = (time - lastFrame) / 1000.0;
-        lastFrame = time;
 
-        if (blinkIntensity > 0) {
-            blinkIntensity = blinkIntensity - deltaTime * maxIntensity;
+    await Promise.all([
+        zeppelin, martianObject, biplaneObject, cloudObject, terrainObject, balloonObject, artilleryObject
+    ]);
+
+    const typingSpeed = 1;
+    imitateTypewriterEffect("Никто не поверил бы в последние годы девятнадцатого  столетия,  что  за всем происходящим на Земле  зорко  и  внимательно  следят  существа  более развитые, чем человек, хотя такие же смертные, как и он; что в  то  время, как люди занимались своими делами, их исследовали и изучали,  может  быть, так же тщательно,  как  человек  в  микроскоп  изучает  эфемерных  тварей, кишащих и размножающихся  в  капле  воды.", document.getElementById("typewriter"), typingSpeed);
+
+    startButton.addEventListener("click", () => {
+        loading_music.pause();
+        startButton.style.display = "none";
+        document.getElementById("quote").style.display = "none";
+        document.getElementById("typewriter").style.display = "none";
+
+        setTimeout(() => {
+            const subtitles = document.getElementById("subtitles")
+            subtitles.style.display = "block";
+            subtitles.textContent += "Берегись!";
+            setTimeout(() => {
+                subtitles.textContent += " Артиллерия!";
+            }, 1100);
+            const artilleryShout = new Audio("../audio/artillery4.mp3");
+            artilleryShout.playbackRate = 1;
+            setTimeout(() => {
+                const artilleryBLAST = new Audio("../audio/blast2.mp3");
+                artilleryBLAST.volume = 1;
+                artilleryBLAST.play();
+                loadingScreen.style.display = "none";
+                startGameLoop();
+            }, 2600);
+
+
+            artilleryShout.volume = 0.6;
+            artilleryShout.play();
+        }, 350);
+    });
+
+    var blinkPosition = vec3.create();
+    var artilleryMatrix = mat4.create();
+    mat4.translate(artilleryMatrix, artilleryMatrix, [-7, -3, 0]);
+    mat4.rotateY(artilleryMatrix, artilleryMatrix, -Math.PI / 4);
+    var blinkColor = [0.8, 0.1, 0];
+
+    function startGameLoop() {
+        async function render(time) {
+            resizeCanvasToDisplaySize(canvas);
+            const deltaTime = (time - lastFrame) / 1000.0;
+            lastFrame = time;
+
+            if (blinkIntensity > 0) {
+                blinkIntensity = blinkIntensity - deltaTime * maxIntensity;
+            }
+
+            // Clear the screen
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+
+            // Update objects
+            zeppelin.update(deltaTime, camera);
+
+            // Create matrices
+            const projectionMatrix = mat4.create();
+            mat4.perspective(projectionMatrix, glMatrix.toRadian(45), canvas.width / canvas.height, 0.1, 100.0);
+            const viewMatrix = camera.getViewMatrix();
+
+
+            // Render zeppelin
+            zeppelin.render(viewMatrix, projectionMatrix);
+
+            const martian1Model = mat4.create();
+            const martian2Model = mat4.create();
+            mat4.translate(martian1Model, martian1Model, [0, 2, 0]);
+            mat4.translate(martian2Model, martian1Model, [6, 0, 6]);
+            mat4.translate(martian1Model, martian1Model, [-0.2, -0.2, 0]);
+            mat4.rotateY(martian2Model, martian2Model, -Math.PI / 2);
+
+
+            const martiansModels = new Float32Array(16 * 2);
+            martiansModels.set(martian1Model, 0);
+            martiansModels.set(martian2Model, 16);
+
+            const now = Date.now() / 1000;
+            const biplaneModels = new Float32Array(16 * numBiplanes);
+            orbitCenter = [0, 0, 0];
+            orbitRadius = 1.5;
+            var new_orbit = true;
+            for (let i = 0; i < numBiplanes; i++) {
+                if (i > numBiplanes / 2 && new_orbit) {
+                    vec3.add(orbitCenter, orbitCenter, [6 - 0.2, 0 - 0.2, 6]);
+                    orbitRadius -= 1;
+                    new_orbit = false;
+                }
+                const angle = Math.PI / 2.0 / numBiplanes + now * orbitSpeed * (biplanesSpeeds[i] * 2 + .5);
+                const biplaneMatrix = mat4.create();
+                const x = Math.cos(angle) * (orbitRadius + biplanesSpeeds[i] * 3 + 2);
+                //const y = Math.cos(angle) * (orbitRadius - biplanesSpeeds[i] * 2);
+                const y = Math.cos(angle) * (biplanesSpeeds[i] * 2);
+                const z = Math.sin(angle) * (orbitRadius + biplanesSpeeds[i] * 3 + 2);
+                mat4.translate(biplaneMatrix, biplaneMatrix, [x, y + -2.5 + biplanesSpeeds[i] * 2, z]);
+                mat4.translate(biplaneMatrix, biplaneMatrix, orbitCenter);
+
+                mat4.rotateY(biplaneMatrix, biplaneMatrix, -Math.atan2(z, x) + Math.PI / 2);
+                mat4.rotateX(biplaneMatrix, biplaneMatrix, -Math.PI / 3 * Math.abs(1 - Math.sin(angle)));
+
+                biplaneModels.set(biplaneMatrix, i * 16);
+            }
+
+
+
+            martianObject.render(martiansModels, viewMatrix, projectionMatrix, 0, 2);
+            biplaneObject.render(biplaneModels, viewMatrix, projectionMatrix, 0, numBiplanes);
+
+            artilleryObject.render(artilleryMatrix, viewMatrix, projectionMatrix, 0);
+
+            updateBlinkingLight(gl, program, blinkPosition, blinkColor, blinkIntensity);
+
+            applyDisplacementMap(gl, program, heightMap, terrainObject);
+
+            const terrainModel = mat4.create();
+            mat4.translate(terrainModel, terrainModel, [0.2, -19, 0]);
+            terrainObject.render(terrainModel, viewMatrix, projectionMatrix, 0);
+
+            gl.activeTexture(gl.TEXTURE1);
+            gl.bindTexture(gl.TEXTURE_2D, null);
+
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+            //gl.depthMask(false);
+            cloudObject.render(cloudMatrices, viewMatrix, projectionMatrix, 0, numClouds);
+            //gl.depthMask(true);
+
+            balloonObject.render(balloonMatrices, viewMatrix, projectionMatrix, 0, numBalloons);
+
+            requestAnimationFrame(render);
         }
 
-        // Clear the screen
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        // Create the background music audio object
+        const soundtrack = new Audio('../audio/music.ogg');
+        soundtrack.loop = true;  // Loop the soundtrack
+        soundtrack.volume = 0.4; // Set volume (optional)
+        soundtrack.play(); // Start playing the soundtrack
 
-        // Update objects
-        zeppelin.update(deltaTime, camera);
+        const biplaneSound = new Audio("../audio/plane.mp3");
+        biplaneSound.loop = true;
+        biplaneSound.volume = 0.35;
+        biplaneSound.play();
 
+        const ambient = new Audio("../audio/ambient1.mp3");
+        ambient.loop = true;
+        ambient.volume = 0.10;
+        ambient.play();
 
-        // Create matrices
-        const projectionMatrix = mat4.create();
-        mat4.perspective(projectionMatrix, glMatrix.toRadian(45), canvas.width / canvas.height, 0.1, 100.0);
-        const viewMatrix = camera.getViewMatrix();
+        // Define sound effects
+        const otherSounds = [
+            new Audio('../audio/whistle1.mp3'),
+            new Audio('../audio/whistle2.mp3'),
+            new Audio('../audio/blast.mp3'),
+            new Audio('../audio/gas.mp3'),
+            new Audio('../audio/artillery1.mp3'),
+            new Audio('../audio/artillery3.mp3'),
+            new Audio('../audio/enemy1.mp3'),
+            new Audio('../audio/enemy2.mp3'),
+            new Audio('../audio/gas2.mp3'),
+            new Audio('../audio/retreat.mp3'),
+            new Audio('../audio/defend1.mp3')
+        ];
 
-
-        // Render zeppelin
-        zeppelin.render(viewMatrix, projectionMatrix);
-
-        const martian1Model = mat4.create();
-        const martian2Model = mat4.create();
-        mat4.translate(martian2Model, martian1Model, [6, 0, 6]);
-        mat4.rotateY(martian2Model, martian2Model, -Math.PI / 2);
-
-
-        const martiansModels = new Float32Array(16 * 2);
-        martiansModels.set(martian1Model, 0);
-        martiansModels.set(martian2Model, 16);
-
-        const now = Date.now() / 1000;
-        const biplaneModels = new Float32Array(16 * numBiplanes);
-        for (let i = 0; i < numBiplanes; i++) {
-            const angle = Math.PI / 2.0 / numBiplanes + now * orbitSpeed * (biplanesSpeeds[i] * 2 + .5);
-            const biplaneMatrix = mat4.create();
-            const x = Math.cos(angle) * (orbitRadius + biplanesSpeeds[i] * 3 + .5);
-            //const y = Math.cos(angle) * (orbitRadius - biplanesSpeeds[i] * 2);
-            const y = Math.cos(angle) * (biplanesSpeeds[i] * 2);
-            const z = Math.sin(angle) * (orbitRadius + biplanesSpeeds[i] * 3 + .5);
-            mat4.translate(biplaneMatrix, biplaneMatrix, [x, y + -2.5 + biplanesSpeeds[i] * 2, z]);
-
-            mat4.rotateY(biplaneMatrix, biplaneMatrix, -Math.atan2(z, x) + Math.PI / 2);
-            mat4.rotateX(biplaneMatrix, biplaneMatrix, -Math.PI / 3);
-
-            biplaneModels.set(biplaneMatrix, i * 16);
+        // Function to play a random sound
+        function playRandomSound() {
+            const sound = otherSounds[Math.floor(Math.random() * otherSounds.length)];
+            sound.volume = 0.15;
+            sound.play();
         }
 
+        // Function to generate random intervals
+        function startRandomSoundEffects() {
+            // Set interval to play random sound at random times between 1 and 5 seconds
+            setInterval(() => {
+                playRandomSound();
+            }, Math.random() * 5000 + 3000); // Random time between 1s and 5s
+        }
 
-        updateBlinkingLight(gl, program, [1.2, -0.215, 0], [0.8, 0.5, 0], blinkIntensity);
+        // Start playing random sounds
+        startRandomSoundEffects();
 
-        martianObject.render(martiansModels, viewMatrix, projectionMatrix, 0, 2);
-        biplaneObject.render(biplaneModels, viewMatrix, projectionMatrix, 0, numBiplanes);
 
-        gl.enable(gl.BLEND);
-        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-        gl.depthMask(false);
-        cloudObject.render(cloudMatrices, viewMatrix, projectionMatrix, 0, numClouds);
-        gl.depthMask(true);
+        // Handle keyboard inputs
+        window.addEventListener("keydown", (e) => {
+            keys[e.code] = true;
+            if (e.code === "KeyL") {
+                if (zeppelin.spotlight_on) {
+                    let light_sound = new Audio("../audio/flashlight_off.wav");
+                    light_sound.volume = 0.8;
+                    light_sound.play();
+                }
+                else {
+                    let light_sound = new Audio("../audio/flashlight_on.wav");
+                    light_sound.volume = 0.8;
+                    light_sound.play();
+                }
+                zeppelin.spotlight_on = !zeppelin.spotlight_on;
+                zeppelin.camera_transitioning = true;
+            }
+        });
+        window.addEventListener("keyup", (e) => (keys[e.code] = false));
+
+        // Lock pointer and handle mouse movement
+        canvas.addEventListener("click", () => canvas.requestPointerLock());
+        document.addEventListener("mousemove", (event) => {
+            if (document.pointerLockElement === canvas) {
+                camera.processMouseMovement(event.movementX, -event.movementY);
+            }
+        });
+
+        canvas.addEventListener("wheel", (event) => {
+            // Normalize wheel delta (Firefox may have different behavior for `deltaY`)
+            let delta = event.deltaY;
+            camera.processMouseWheel(delta);
+            event.preventDefault(); // Prevent the page from scrolling
+        });
+
+        setInterval(() => {
+            blinkPosition = vec3.create();
+            if (Math.random() > 0.7) {
+                const artilleryShot = new Audio("../audio/blast2.mp3");
+                vec3.transformMat4(blinkPosition, blinkPosition, artilleryMatrix);
+                vec3.add(blinkPosition, blinkPosition, [1, 0.3, 0.1]);
+                artilleryShot.volume = 0.3;
+                blinkColor = [0.8, 0.5, 0];
+                artilleryShot.play();
+                blinkIntensity = maxIntensity + 20;
+            }
+            else {
+                const artilleryShot = new Audio("../audio/blast.mp3");
+                vec3.transformMat4(blinkPosition, blinkPosition, artilleryMatrix);
+                vec3.add(blinkPosition, blinkPosition, [1, 0.3, -0.5]);
+                artilleryShot.volume = 0.4;
+                blinkColor = [0.8, 0.1, 0];
+                artilleryShot.play();
+                blinkIntensity = maxIntensity;
+            }
+        }, 5000);
 
         requestAnimationFrame(render);
     }
-
-    // Create the background music audio object
-    const soundtrack = new Audio('../audio/music.mp3');
-    soundtrack.loop = true;  // Loop the soundtrack
-    soundtrack.volume = 0.48; // Set volume (optional)
-    soundtrack.play(); // Start playing the soundtrack
-
-    const biplaneSound = new Audio("../audio/plane.mp3");
-    biplaneSound.loop = true;
-    biplaneSound.volume = 0.35;
-    biplaneSound.play();
-
-    const ambient = new Audio("../audio/ambient1.mp3");
-    ambient.loop = true;
-    ambient.volume = 0.10;
-    ambient.play();
-
-    // Define sound effects
-    const otherSounds = [
-        new Audio('../audio/whistle1.mp3'),
-        new Audio('../audio/whistle2.mp3'),
-        new Audio('../audio/blast.mp3'),
-        new Audio('../audio/gas.mp3'),
-        new Audio('../audio/artillery1.mp3'),
-        new Audio('../audio/artillery3.mp3'),
-        new Audio('../audio/enemy1.mp3'),
-        new Audio('../audio/enemy2.mp3'),
-        new Audio('../audio/gas2.mp3'),
-        new Audio('../audio/retreat.mp3')
-    ];
-
-    // Function to play a random sound
-    function playRandomSound() {
-        const sound = otherSounds[Math.floor(Math.random() * otherSounds.length)];
-        sound.volume = 0.20;
-        sound.play();
-    }
-
-    // Function to generate random intervals
-    function startRandomSoundEffects() {
-        // Set interval to play random sound at random times between 1 and 5 seconds
-        setInterval(() => {
-            playRandomSound();
-        }, Math.random() * 5000 + 2000); // Random time between 1s and 5s
-    }
-
-    // Start playing random sounds
-    startRandomSoundEffects();
-
-
-    // Handle keyboard inputs
-    window.addEventListener("keydown", (e) => {
-        keys[e.key.toLowerCase()] = true;
-        if (e.key.toLowerCase() == "l") {
-            zeppelin.spotlight_on = !zeppelin.spotlight_on;
-            zeppelin.camera_transitioning = true;
-        }
-    });
-    window.addEventListener("keyup", (e) => (keys[e.key.toLowerCase()] = false));
-
-    // Lock pointer and handle mouse movement
-    canvas.addEventListener("click", () => canvas.requestPointerLock());
-    document.addEventListener("mousemove", (event) => {
-        if (document.pointerLockElement === canvas) {
-            camera.processMouseMovement(event.movementX, -event.movementY);
-        }
-    });
-
-    canvas.addEventListener("wheel", (event) => {
-        // Normalize wheel delta (Firefox may have different behavior for `deltaY`)
-        let delta = event.deltaY;
-        camera.processMouseWheel(delta);
-        event.preventDefault(); // Prevent the page from scrolling
-    });
-
-    requestAnimationFrame(render);
-
-    const artilleryShot = new Audio("../audio/blast.mp3");
-    setInterval(() => {
-        artilleryShot.volume = Math.max(0, Math.min(Math.random() + 0.5, 1));
-        artilleryShot.play();
-        blinkIntensity = maxIntensity;
-    }, 3000);
 }
-
 main();
 

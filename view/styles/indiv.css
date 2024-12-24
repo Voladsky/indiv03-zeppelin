@@ -1,0 +1,92 @@
+#startButton {
+    display: none;
+}
+
+#gl-canvas {
+    display: none;
+}
+
+body {
+    background-color: #111111;
+    background-image: none;
+}
+
+.typeWriterText {
+    color: white;
+    font-size: 20px;
+    font-family: 'Courier New', Courier, monospace;
+    overflow: visible;
+    border-right: .15em solid white;
+    white-space: normal;
+    margin: 0 auto;
+    letter-spacing: .15em;
+}
+
+#loadingScreen {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #111111;
+    color: white;
+    font-family: 'Courier New', monospace;
+    text-align: center;
+}
+
+#quote {
+    display: none;
+    font-size: 22px;
+    color: #7f7f7f;
+    font-style: italic;
+    border-right: 0;
+}
+
+.typeWriterText {
+    font-size: 2rem;
+    /*font-weight: bold;*/
+    color: white;
+    margin-bottom: 30px;
+    letter-spacing: 0.05em;
+}
+
+#startButton {
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+    background-color: black;
+    color: white;
+    font-size: 1rem;
+    padding: 15px 32px;
+    border: 2px solid #fff;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease, border 0.3s ease;
+}
+
+#startButton:hover {
+    background-color: #f00;
+    color: white;
+    border-color: #900;
+    box-shadow: 0 0 10px 2px rgba(255, 0, 0, 0.6);
+    transform: scale(1.1);
+}
+
+#startButton:active {
+    transform: scale(1);
+    background-color: #900;
+    border-color: #700;
+}
+
+.subtitles {
+    display: none;
+    font-size: 1.5rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-style: italic;
+    text-align: center;
+    padding: 20px 30px;
+    margin-top: 30px;
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+}
