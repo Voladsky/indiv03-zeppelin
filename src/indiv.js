@@ -11,6 +11,17 @@ await Promise.all([
     typesound, loading_music, loading2, stampSound
 ]);
 
+let intervalLoading = null;
+
+const loadingTexts = [
+    "Поднимаем тревогу...",
+    "Эвакуируем население...",
+    "Готовим контрудар...",
+    "Бежим...",
+    "Вводим чрезвычайное положение...",
+    "Осознаём, что не одиноки во Вселенной..."
+];
+
 async function imitateTypewriterEffect(text, element, speed) {
     return new Promise((resolve) => {
         let i = 0;
@@ -43,6 +54,11 @@ async function imitateTypewriterEffect(text, element, speed) {
             } else {
                 document.getElementById("quote").style.display = "block";
                 document.getElementById('loaderAnim').style.display = "block";
+                intervalLoading = setInterval(() => {
+                    const randomText = loadingTexts[Math.floor(Math.random() * loadingTexts.length)];
+                    const loaderTextElement = document.querySelector('.loader-text');
+                    loaderTextElement.textContent = randomText;
+                }, 2500);
                 stampSound.volume = 0.3;
                 stampSound.play();
                 element.innerHTML += "";
@@ -62,7 +78,7 @@ async function imitateTypewriterEffect(text, element, speed) {
     });
 }
 
-const typingSpeed = 50;
+const typingSpeed = 1;
 const typeWriter = imitateTypewriterEffect("Никто не поверил бы в последние годы девятнадцатого  столетия,  что  за всем происходящим на Земле  зорко  и  внимательно  следят  существа  более развитые, чем человек, хотя такие же смертные, как и он; что в  то  время, как люди занимались своими делами, их исследовали и изучали,  может  быть, так же тщательно,  как  человек  в  микроскоп  изучает  эфемерных  тварей, кишащих и размножающихся  в  капле  воды.", document.getElementById("typewriter"), typingSpeed);
 
 
@@ -613,7 +629,7 @@ async function main() {
         balloonData,
         terrainData,
         artilleryData
-      ] = await Promise.all([
+    ] = await Promise.all([
         fetch("../models/zeppelin.obj").then((res) => res.text()),
         fetch("../models/Martian.obj").then((res) => res.text()),
         fetch("../models/Biplane.obj").then((res) => res.text()),
@@ -621,7 +637,7 @@ async function main() {
         fetch("../models/Balloon.obj").then((res) => res.text()),
         fetch("../models/Plane.obj").then((res) => res.text()),
         fetch("../models/Artillery.obj").then((res) => res.text())
-      ]);
+    ]);
 
     const textureUrl = "../images/Zeppelin.png";
 
@@ -700,8 +716,9 @@ async function main() {
         zeppelin, martianObject, biplaneObject, cloudObject, terrainObject, balloonObject, artilleryObject, typeWriter
     ]);
 
-    document.getElementById('loaderAnim').style.display = "none";
     startButton.style.display = "block";
+    clearInterval(intervalLoading);
+    document.getElementById("loaderAnim").style.display = "none";
 
     startButton.addEventListener("click", () => {
         loading_music.pause();
