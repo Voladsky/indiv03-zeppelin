@@ -635,11 +635,6 @@ async function main() {
     }
 
 
-    await Promise.all([
-        zeppelin, martianObject, biplaneObject, cloudObject, terrainObject, balloonObject, artilleryObject
-    ]);
-
-
     const martianTexture = "../images/Martian.png";
     const martianObject = new Object3D(gl, program, martianData, martianTexture, 0.1);
 
@@ -659,7 +654,6 @@ async function main() {
 
     const artilleryTexture = "../images/Artillery.jpg";
     const artilleryObject = new Object3D(gl, program, artilleryData, artilleryTexture, 0.2);
-
 
     const biplanesSpeeds = [];
     const numBiplanes = 8;
