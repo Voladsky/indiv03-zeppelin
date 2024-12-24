@@ -14,9 +14,9 @@ document.getElementById("indivLink").addEventListener("click", function(e) {
         header.style.fontFamily = "'Courier New', Courier, monospace";
     }, 1000);
 
+    const lst = document.querySelectorAll('a');
 
     setTimeout(function() {
-        const lst = document.querySelectorAll('a');
         let i = 0;
         const id = setInterval(() => {
             if (i > lst.length) {

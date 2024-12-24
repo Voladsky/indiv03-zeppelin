@@ -695,7 +695,7 @@ async function main() {
         zeppelin, martianObject, biplaneObject, cloudObject, terrainObject, balloonObject, artilleryObject
     ]);
 
-    document.getElementsByClassName('loader').style.display = "none";
+    document.getElementById('loaderAnim').style.display = "none";
     startButton.style.display = "block";
 
     startButton.addEventListener("click", () => {
