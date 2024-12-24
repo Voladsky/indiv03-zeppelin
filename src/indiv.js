@@ -45,8 +45,6 @@ function imitateTypewriterEffect(text, element, speed) {
             stampSound.volume = 0.3;
             stampSound.play();
             element.innerHTML += "";
-            const startButton = document.getElementById("startButton");
-            startButton.style.display = "block";
             typesound.pause();
             loading_music.loop = false;
             loading_music.addEventListener("ended", function () {
@@ -685,6 +683,7 @@ async function main() {
         zeppelin, martianObject, biplaneObject, cloudObject, terrainObject, balloonObject, artilleryObject
     ]);
 
+    startButton.style.display = "block";
 
     startButton.addEventListener("click", () => {
         loading_music.pause();
