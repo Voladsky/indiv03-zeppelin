@@ -2,7 +2,30 @@ import { createProgram } from "./webgl-utils.js";
 import { parseOBJWithNormals } from "./obj-loader.js";
 import { mat4, vec3, glMatrix } from "https://cdn.jsdelivr.net/npm/gl-matrix@3.4.3/+esm";
 
-const distanceScale = 0;
+let typesound = new Audio("../audio/typewriter.mp3");
+let loading_music = new Audio("../audio/loading1.ogg");
+let loading2 = new Audio("../audio/loading2.ogg");
+const stampSound = new Audio("../audio/stamp.mp3");
+const artilleryShout = new Audio("../audio/artillery4.mp3");
+const artilleryBLAST = new Audio("../audio/blast2.mp3");
+const soundtrack = new Audio('../audio/music.ogg');
+const biplaneSound = new Audio("../audio/plane.mp3");
+const ambient = new Audio("../audio/ambient1.mp3");
+
+// Define sound effects
+const otherSounds = [
+    new Audio('../audio/whistle1.mp3'),
+    new Audio('../audio/whistle2.mp3'),
+    new Audio('../audio/blast.mp3'),
+    new Audio('../audio/gas.mp3'),
+    new Audio('../audio/artillery1.mp3'),
+    new Audio('../audio/artillery3.mp3'),
+    new Audio('../audio/enemy1.mp3'),
+    new Audio('../audio/enemy2.mp3'),
+    new Audio('../audio/gas2.mp3'),
+    new Audio('../audio/retreat.mp3'),
+    new Audio('../audio/defend1.mp3')
+];
 
 class Camera {
     constructor(target = [0.0, 0.0, 0.0], distance = 4.0, up = [0.0, 1.0, 0.0], yaw = -45.0, pitch = -15.0) {
@@ -363,23 +386,18 @@ function applyDisplacementMap(gl, program, heightMap, object) {
     };
 }
 
-let loading_music = null;
-
 function imitateTypewriterEffect(text, element, speed) {
     let i = 0;
     let lastTime = 0; // Variable to store the last time update occurred
-    let typesound = new Audio("../audio/typewriter.mp3");
     typesound.loop = true;
     typesound.volume = 0.20;
     typesound.playbackRate = 1.5;
     typesound.play();
 
-    loading_music = new Audio("../audio/loading1.ogg");
     loading_music.loop = true;
     loading_music.volume = 0.1;
     loading_music.play();
 
-    let loading2 = new Audio("../audio/loading2.ogg");
     loading2.loop = true;
     loading2.volume = 0.1;
 
@@ -397,7 +415,7 @@ function imitateTypewriterEffect(text, element, speed) {
         if (i < text.length) {
             requestAnimationFrame(updateText);
         } else {
-            const stampSound = new Audio("../audio/stamp.mp3");
+
             document.getElementById("quote").style.display = "block";
             stampSound.volume = 0.3;
             stampSound.play();
@@ -673,10 +691,9 @@ async function main() {
             setTimeout(() => {
                 subtitles.textContent += " Артиллерия!";
             }, 1100);
-            const artilleryShout = new Audio("../audio/artillery4.mp3");
+
             artilleryShout.playbackRate = 1;
             setTimeout(() => {
-                const artilleryBLAST = new Audio("../audio/blast2.mp3");
                 artilleryBLAST.volume = 1;
                 artilleryBLAST.play();
                 loadingScreen.style.display = "none";
@@ -789,35 +806,17 @@ async function main() {
         }
 
         // Create the background music audio object
-        const soundtrack = new Audio('../audio/music.ogg');
         soundtrack.loop = true;  // Loop the soundtrack
         soundtrack.volume = 0.4; // Set volume (optional)
         soundtrack.play(); // Start playing the soundtrack
 
-        const biplaneSound = new Audio("../audio/plane.mp3");
         biplaneSound.loop = true;
         biplaneSound.volume = 0.35;
         biplaneSound.play();
 
-        const ambient = new Audio("../audio/ambient1.mp3");
         ambient.loop = true;
         ambient.volume = 0.10;
         ambient.play();
-
-        // Define sound effects
-        const otherSounds = [
-            new Audio('../audio/whistle1.mp3'),
-            new Audio('../audio/whistle2.mp3'),
-            new Audio('../audio/blast.mp3'),
-            new Audio('../audio/gas.mp3'),
-            new Audio('../audio/artillery1.mp3'),
-            new Audio('../audio/artillery3.mp3'),
-            new Audio('../audio/enemy1.mp3'),
-            new Audio('../audio/enemy2.mp3'),
-            new Audio('../audio/gas2.mp3'),
-            new Audio('../audio/retreat.mp3'),
-            new Audio('../audio/defend1.mp3')
-        ];
 
         // Function to play a random sound
         function playRandomSound() {
@@ -873,24 +872,25 @@ async function main() {
             event.preventDefault(); // Prevent the page from scrolling
         });
 
+        const artilleryShot2 = new Audio("../audio/blast2.mp3");
+        const artilleryShot1 = new Audio("../audio/blast.mp3");
+
         setInterval(() => {
             blinkPosition = vec3.create();
             if (Math.random() > 0.7) {
-                const artilleryShot = new Audio("../audio/blast2.mp3");
                 vec3.transformMat4(blinkPosition, blinkPosition, artilleryMatrix);
                 vec3.add(blinkPosition, blinkPosition, [1, 0.3, 0.1]);
-                artilleryShot.volume = 0.3;
+                artilleryShot2.volume = 0.3;
                 blinkColor = [0.8, 0.5, 0];
-                artilleryShot.play();
+                artilleryShot2.play();
                 blinkIntensity = maxIntensity + 20;
             }
             else {
-                const artilleryShot = new Audio("../audio/blast.mp3");
                 vec3.transformMat4(blinkPosition, blinkPosition, artilleryMatrix);
                 vec3.add(blinkPosition, blinkPosition, [1, 0.3, -0.5]);
-                artilleryShot.volume = 0.4;
+                artilleryShot1.volume = 0.4;
                 blinkColor = [0.8, 0.1, 0];
-                artilleryShot.play();
+                artilleryShot1.play();
                 blinkIntensity = maxIntensity;
             }
         }, 5000);
