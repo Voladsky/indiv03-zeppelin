@@ -599,7 +599,19 @@ async function main() {
     }`;
 
     const program = createProgram(gl, vertexShaderSource, fragmentShaderSource);
-    const objData = await fetch("../models/zeppelin.obj").then((res) => res.text());
+
+    const objData = fetch("../models/zeppelin.obj").then((res) => res.text());
+    const martianData = fetch("../models/Martian.obj").then((res) => res.text());
+    const biplaneData = fetch("../models/Biplane.obj").then((res) => res.text());
+    const cloudData = fetch("../models/Cloud.obj").then((res) => res.text());
+    const balloonData = fetch("../models/Balloon.obj").then((res) => res.text());
+    const terrainData = fetch("../models/Plane.obj").then((res) => res.text());
+    const artilleryData = fetch("../models/Artillery.obj").then((res) => res.text());
+
+    await Promise.all([
+        objData, martianData, biplaneData, cloudData, balloonData, terrainData, artilleryData
+    ]);
+
     const textureUrl = "../images/Zeppelin.png";
 
     const zeppelin = new Zeppelin(gl, program, objData, textureUrl);
@@ -616,29 +628,29 @@ async function main() {
         }
     }
 
-    const martianData = fetch("../models/Martian.obj").then((res) => res.text());
+
+    await Promise.all([
+        zeppelin, martianObject, biplaneObject, cloudObject, terrainObject, balloonObject, artilleryObject
+    ]);
+
+
     const martianTexture = "../images/Martian.png";
     const martianObject = new Object3D(gl, program, martianData, martianTexture, 0.1);
 
-    const biplaneData = fetch("../models/Biplane.obj").then((res) => res.text());
     const biplaneTexture = "../models/Biplane.png";
     const biplaneObject = new Object3D(gl, program, biplaneData, biplaneTexture, 0.08); // Orbit center, radius, speed
 
-    const cloudData = fetch("../models/Cloud.obj").then((res) => res.text());
     const cloudTexture = "../images/Cloud.png";
     const cloudObject = new Object3D(gl, program, cloudData, cloudTexture, 0.002);
 
-    const balloonData = fetch("../models/Balloon.obj").then((res) => res.text());
     const balloonTexture = "../images/Balloon.png";
     const balloonObject = new Object3D(gl, program, balloonData, balloonTexture, 0.1);
 
 
-    const terrainData = fetch("../models/Plane.obj").then((res) => res.text());
     const terrainTexture = "../images/terrain.png";
     const heightMap = "../images/heightmap2.png";
     const terrainObject = new Object3D(gl, program, terrainData, terrainTexture, 5);
 
-    const artilleryData = fetch("../models/Artillery.obj").then((res) => res.text());
     const artilleryTexture = "../images/Artillery.jpg";
     const artilleryObject = new Object3D(gl, program, artilleryData, artilleryTexture, 0.2);
 
