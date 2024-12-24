@@ -78,7 +78,7 @@ async function imitateTypewriterEffect(text, element, speed) {
     });
 }
 
-const typingSpeed = 1;
+const typingSpeed = 50;
 const typeWriter = imitateTypewriterEffect("Никто не поверил бы в последние годы девятнадцатого  столетия,  что  за всем происходящим на Земле  зорко  и  внимательно  следят  существа  более развитые, чем человек, хотя такие же смертные, как и он; что в  то  время, как люди занимались своими делами, их исследовали и изучали,  может  быть, так же тщательно,  как  человек  в  микроскоп  изучает  эфемерных  тварей, кишащих и размножающихся  в  капле  воды.", document.getElementById("typewriter"), typingSpeed);
 
 
