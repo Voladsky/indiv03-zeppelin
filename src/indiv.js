@@ -11,7 +11,7 @@ await Promise.all([
     typesound, loading_music, loading2, stampSound
 ]);
 
-function imitateTypewriterEffect(text, element, speed) {
+async function imitateTypewriterEffect(text, element, speed) {
     let i = 0;
     let lastTime = 0; // Variable to store the last time update occurred
     typesound.loop = true;
