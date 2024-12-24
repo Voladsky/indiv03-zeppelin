@@ -6,6 +6,60 @@ let typesound = new Audio("../audio/typewriter.mp3");
 let loading_music = new Audio("../audio/loading1.ogg");
 let loading2 = new Audio("../audio/loading2.ogg");
 const stampSound = new Audio("../audio/stamp.mp3");
+
+function imitateTypewriterEffect(text, element, speed) {
+    let i = 0;
+    let lastTime = 0; // Variable to store the last time update occurred
+    typesound.loop = true;
+    typesound.volume = 0.20;
+    typesound.playbackRate = 1.5;
+    typesound.play();
+
+    loading_music.loop = true;
+    loading_music.volume = 0.1;
+    loading_music.play();
+
+    loading2.loop = true;
+    loading2.volume = 0.1;
+
+    function updateText(currentTime) {
+        const deltaTime = currentTime - lastTime;
+
+        if (deltaTime >= speed) {
+            if (i < text.length) {
+                element.textContent += text[i];
+                i++;
+            }
+            lastTime = currentTime;
+        }
+
+        if (i < text.length) {
+            requestAnimationFrame(updateText);
+        } else {
+
+            document.getElementById("quote").style.display = "block";
+            stampSound.volume = 0.3;
+            stampSound.play();
+            element.innerHTML += "";
+            const startButton = document.getElementById("startButton");
+            startButton.style.display = "block";
+            typesound.pause();
+            loading_music.loop = false;
+            loading_music.addEventListener("ended", function () {
+                loading_music = loading2;
+                loading_music.play();
+            });
+        }
+    }
+
+    requestAnimationFrame(updateText);
+}
+
+const typingSpeed = 50;
+imitateTypewriterEffect("Никто не поверил бы в последние годы девятнадцатого  столетия,  что  за всем происходящим на Земле  зорко  и  внимательно  следят  существа  более развитые, чем человек, хотя такие же смертные, как и он; что в  то  время, как люди занимались своими делами, их исследовали и изучали,  может  быть, так же тщательно,  как  человек  в  микроскоп  изучает  эфемерных  тварей, кишащих и размножающихся  в  капле  воды.", document.getElementById("typewriter"), typingSpeed);
+
+
+
 const artilleryShout = new Audio("../audio/artillery4.mp3");
 const artilleryBLAST = new Audio("../audio/blast2.mp3");
 const soundtrack = new Audio('../audio/music.ogg');
@@ -385,58 +439,6 @@ function applyDisplacementMap(gl, program, heightMap, object) {
         object.displacementMap = displacementMap;
     };
 }
-
-function imitateTypewriterEffect(text, element, speed) {
-    let i = 0;
-    let lastTime = 0; // Variable to store the last time update occurred
-    typesound.loop = true;
-    typesound.volume = 0.20;
-    typesound.playbackRate = 1.5;
-    typesound.play();
-
-    loading_music.loop = true;
-    loading_music.volume = 0.1;
-    loading_music.play();
-
-    loading2.loop = true;
-    loading2.volume = 0.1;
-
-    function updateText(currentTime) {
-        const deltaTime = currentTime - lastTime;
-
-        if (deltaTime >= speed) {
-            if (i < text.length) {
-                element.textContent += text[i];
-                i++;
-            }
-            lastTime = currentTime;
-        }
-
-        if (i < text.length) {
-            requestAnimationFrame(updateText);
-        } else {
-
-            document.getElementById("quote").style.display = "block";
-            stampSound.volume = 0.3;
-            stampSound.play();
-            element.innerHTML += "";
-            const startButton = document.getElementById("startButton");
-            startButton.style.display = "block";
-            typesound.pause();
-            loading_music.loop = false;
-            loading_music.addEventListener("ended", function () {
-                loading_music = loading2;
-                loading_music.play();
-            });
-        }
-    }
-
-    requestAnimationFrame(updateText);
-}
-
-const typingSpeed = 50;
-imitateTypewriterEffect("Никто не поверил бы в последние годы девятнадцатого  столетия,  что  за всем происходящим на Земле  зорко  и  внимательно  следят  существа  более развитые, чем человек, хотя такие же смертные, как и он; что в  то  время, как люди занимались своими делами, их исследовали и изучали,  может  быть, так же тщательно,  как  человек  в  микроскоп  изучает  эфемерных  тварей, кишащих и размножающихся  в  капле  воды.", document.getElementById("typewriter"), typingSpeed);
-
 
 async function main() {
     const canvas = document.getElementById("gl-canvas");
